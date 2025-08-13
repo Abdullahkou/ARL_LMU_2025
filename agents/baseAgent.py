@@ -16,3 +16,9 @@ class BaseAgent(Protocol):
         """obs: np.ndarray, observation to predict action for
         returns: np.ndarray, action to take"""
         pass
+
+    def save(self, path: str) -> None:
+        pass
+
+    def load(self, path: str) -> None:
+        pass
