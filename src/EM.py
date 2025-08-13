@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from stable_baselines3 import PPO, SAC, A2C, DQN
 from typing import List, Dict
 
@@ -52,15 +52,14 @@ class EnsembleRL:
             env.close()
 
 
-# Beispiel-Nutzung:
 if __name__ == "__main__":
     ensemble = EnsembleRL(
         env_id="CartPole-v1",
-        algos=["PPO", "SAC"],
+        algos=["PPO", "A2C"],   
         total_timesteps=5000,
         algo_params={
             "PPO": {"learning_rate": 0.0003},
-            "SAC": {"learning_rate": 0.0005}
+            "A2C": {"learning_rate": 0.0005}
         }
     )
     
