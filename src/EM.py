@@ -9,6 +9,7 @@ class EnsembleRL:
         "SAC": SAC,
         "A2C": A2C,
         "DQN": DQN
+        # TODO: The other algorithms from stable baselines or elsewhere
     }
     
     def __init__(self, env_id: str, algos: List[str], total_timesteps=10000, algo_params: Dict = None, render_interval=2000):
@@ -66,6 +67,13 @@ class EnsembleRL:
     def close(self):
         for env in self.envs:
             env.close()
+    
+    def decision(self):
+        # TODO
+        pass
+
+    def plot_training(self):
+        pass
 
 
 if __name__ == "__main__":
