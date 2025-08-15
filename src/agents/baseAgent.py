@@ -15,7 +15,7 @@ class BaseAgent(Protocol):
         eval_fn(optional): function, evaluation function to call during learning"""
         pass
 
-    def predict(self, obs: np.ndarray, deterministic=False):
+    def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
         """obs: np.ndarray, observation to predict action for
         returns: np.ndarray, action to take"""
         pass
@@ -24,4 +24,5 @@ class BaseAgent(Protocol):
         pass
 
     def load(self, path: str) -> None:
+        """internal loading"""
         pass
