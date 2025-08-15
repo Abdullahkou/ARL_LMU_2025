@@ -1,6 +1,5 @@
 import csv
 
-import numpy as np
 from gymnasium import Env
 
 from agents.baseAgent import BaseAgent
@@ -9,7 +8,7 @@ from utils.logging import EVAL_COLS, EpisodeLogger, Training_STEP_COL
 
 def eval(
     current_step: int,
-    training_results: list[np.ndarray],
+    training_results: list[tuple],
     results_dir: str,
     model: BaseAgent,
     eval_env: Env,
