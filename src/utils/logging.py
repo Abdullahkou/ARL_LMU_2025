@@ -2,6 +2,7 @@ import csv
 from collections import deque
 
 import numpy as np
+from pandas import DataFrame
 
 Training_STEP_COL = "Training Step"
 EVAL_EP_COL = "Evaluation Episode"
@@ -55,6 +56,11 @@ class EpisodeLogger:
         mean = np.mean(self.episode_results, axis=0)
 
         return tuple(mean)
+
+
+def safe_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1):
+    rolling_avg = df.rolling(window=window_size, min_periods=min_periods).mean()
+    rolling_avg.to_csv(file_name)
 
 
 def safe_mean(arr: np.ndarray | list | deque):
