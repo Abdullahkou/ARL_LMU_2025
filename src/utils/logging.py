@@ -4,7 +4,7 @@ from collections import deque
 import numpy as np
 from pandas import DataFrame
 
-Training_STEP_COL = "Training Step"
+TRAINING_STEP_COL = "Training Step"
 EVAL_EP_COL = "Evaluation Episode"
 
 # ep col names

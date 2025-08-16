@@ -3,7 +3,7 @@ import csv
 from gymnasium import Env
 
 from agents.baseAgent import BaseAgent
-from utils.logging import EVAL_COLS, EpisodeLogger, Training_STEP_COL
+from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 
 
 def eval(
@@ -27,7 +27,7 @@ def eval(
     if eval_ep == 0:
         with open(save_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([Training_STEP_COL] + EVAL_COLS)
+            writer.writerow([TRAINING_STEP_COL] + EVAL_COLS)
 
     intermediate_results_file = None
     if intermediate_results_dir is not None:
