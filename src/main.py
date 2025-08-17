@@ -1,11 +1,11 @@
 from agents.baseAgent import Algo, BaseAgent
-from EM import EnsembleRL
+from EM_v1 import EnsembleRL
 
 
 def main():
     learners = [
-        BaseAgent(algo=Algo.PPO, params={"learning_rate": 0.0003}),
-        BaseAgent(algo=Algo.A2C, params={"learning_rate": 0.0005}),
+        BaseAgent(algo=Algo.PPO, hyper_params={"learning_rate": 0.0003}),
+        BaseAgent(algo=Algo.A2C, hyper_params={"learning_rate": 0.0005}),
     ]
 
     ensemble = EnsembleRL(
