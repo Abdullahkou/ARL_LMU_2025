@@ -1,20 +1,30 @@
+from enum import Enum
 from typing import Callable, Protocol
 
 import numpy as np
 from gymnasium import Env
+from stable_baselines3 import A2C, DQN, PPO, SAC
+
+
+class Algo(Enum):
+    PPO = PPO
+    SAC = SAC
+    A2C = A2C
+    DQN = DQN
+    # TODO: The other algorithms from stable baselines or elsewhere
 
 
 class BaseAgent(Protocol):
     """Basic agent interface"""
 
-    def __init__(self, config, env: Env) -> None:
+    def __init__(self, algo: Algo, env: Env, params: dict = {}) -> None:
         """
         Base ctor.
 
         :param config: TODO: to be defined
         :param env: gym environment
         """
-        super().__init__()
+        pass
 
     def learn(self, total_steps: int, eval_fn: Callable | None = None) -> None:
         """
