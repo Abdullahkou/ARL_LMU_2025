@@ -40,6 +40,7 @@ class EnsembleRL:
                 while not (done or truncated):
                     action, _ = model.predict(obs)
                     obs, reward, done, truncated, _ = demo_env.step(action)
+                    learner.history.append(reward)
                     time.sleep(0.02)  # langsamer machen für Sichtbarkeit
                 demo_env.close()
         print("\n✅ Training abgeschlossen!")

@@ -15,6 +15,7 @@ class BaseAgent(Protocol):
         env: TODO to be defined -> gym"""
         self.algo = algo
         self.params = params
+        self.history = []
         super().__init__()
 
     def learn(self, total_steps, eval_fn=None) -> None:

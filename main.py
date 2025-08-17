@@ -1,5 +1,7 @@
 from agents.baseAgent import BaseAgent, Algo
 from src.EM import EnsembleRL
+from utils.plot import line_plot
+from datetime import datetime
 
 def main():
     learners = [
@@ -18,6 +20,10 @@ def main():
     obs = ensemble.envs[0].reset()[0]
     print("Aktionen:", ensemble.predict(obs))
     ensemble.close()
+    
+    for learner in learners:
+        line_plot(learner.history, f"{learner.algo.name}-{datetime.now()}.png")
+
 
 
 if __name__ == "__main__":
