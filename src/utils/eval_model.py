@@ -36,7 +36,7 @@ def eval(
     ep_logger = EpisodeLogger(intermediate_results_file=intermediate_results_file)
 
     for _ in range(num_episodes):
-        state = eval_env.reset()
+        state, _ = eval_env.reset()
 
         done = False
         while not done:
