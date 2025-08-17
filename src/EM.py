@@ -1,37 +1,24 @@
 import time
 import gymnasium as gym
-from stable_baselines3 import PPO, SAC, A2C, DQN
-from typing import List, Dict
+from typing import List
+from agents.baseAgent import BaseAgent, Algo
 
 class EnsembleRL:
-    ALGOS = {
-        "PPO": PPO,
-        "SAC": SAC,
-        "A2C": A2C,
-        "DQN": DQN
-        # TODO: The other algorithms from stable baselines or elsewhere
-    }
-    
-    def __init__(self, env_id: str, algos: List[str], total_timesteps=10000, algo_params: Dict = None, render_interval=2000):
+    def __init__(self, env_id: str, learners: List[BaseAgent], total_timesteps=10000, render_interval=2000):
         self.env_id = env_id
-        self.algos = algos
+        self.learners = learners
         self.total_timesteps = total_timesteps
         self.render_interval = render_interval  # Schritte zwischen den Live-Demos
-        self.algo_params = algo_params if algo_params else {}
-        
+
         self.envs = []
         self.models = []
         self._init_models()
 
     def _init_models(self):
-        for algo_name in self.algos:
-            if algo_name not in self.ALGOS:
-                raise ValueError(f"Algorithm {algo_name} not supported. Available: {list(self.ALGOS.keys())}")
-            
+        for learner in self.learners:
             env = gym.make(self.env_id)
-            model_class = self.ALGOS[algo_name]
-            params = self.algo_params.get(algo_name, {})
-            model = model_class("MlpPolicy", env, verbose=0, **params)
+            model_class = learner.algo.value
+            model = model_class("MlpPolicy", env, verbose=0, **learner.params)
             
             self.envs.append(env)
             self.models.append(model)
@@ -40,13 +27,13 @@ class EnsembleRL:
         """Trainiert und zeigt zwischendurch Episoden im Render-Fenster."""
         steps_done = 0
         while steps_done < self.total_timesteps:
-            for algo_name, model in zip(self.algos, self.models):
-                print(f"\n📚 Training {algo_name} für {self.render_interval} Schritte...")
+            for learner, model in zip(self.learners, self.models):
+                print(f"\n📚 Training {learner.algo.name} für {self.render_interval} Schritte...")
                 model.learn(total_timesteps=self.render_interval, reset_num_timesteps=False)
                 steps_done += self.render_interval
 
                 # Live-Demo Episode
-                print(f"🎬 Zeige Episode für {algo_name}...")
+                print(f"🎬 Zeige Episode für {learner.algo.name}...")
                 demo_env = gym.make(self.env_id, render_mode="human")
                 obs, _ = demo_env.reset()
                 done, truncated = False, False
@@ -59,9 +46,9 @@ class EnsembleRL:
 
     def predict(self, obs):
         actions = {}
-        for algo_name, model in zip(self.algos, self.models):
+        for learner, model in zip(self.learners, self.models):
             action, _ = model.predict(obs)
-            actions[algo_name] = action
+            actions[learner.algo.name] = action
         return actions
 
     def close(self):
@@ -77,15 +64,16 @@ class EnsembleRL:
 
 
 if __name__ == "__main__":
+    learners = [
+        BaseAgent(algo=Algo.PPO, params={"learning_rate": 0.0003}),
+        BaseAgent(algo=Algo.A2C, params={"learning_rate": 0.0005})
+    ]
+
     ensemble = EnsembleRL(
         env_id="CartPole-v1",
-        algos=["PPO", "A2C"],
+        learners=learners,
         total_timesteps=5000,
         render_interval=1000,  # alle 1000 Schritte eine Live-Demo
-        algo_params={
-            "PPO": {"learning_rate": 0.0003},
-            "A2C": {"learning_rate": 0.0005}
-        }
     )
     
     ensemble.train_with_visualization()
