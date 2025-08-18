@@ -1,8 +1,41 @@
 from enum import Enum
-from typing import Callable, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol
 
+import gymnasium as gym
 import numpy as np
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
+
+
+class RandomAgent:
+    """Can be used for onxx mystery model or Random agent, depending on whether you provide a path"""
+
+    def __init__(
+        self,
+        action_space: gym.Space = None,
+        eval_model: Optional[Callable[[int], None]] = None,
+        seed: int = 42,
+    ):
+        self.action_space = action_space if action_space else None
+        self.eval_model = eval_model
+
+        self.set_random_seed(seed=seed)
+
+    def set_random_seed(self, seed: int):
+        self.seed = seed
+        np.random.seed(self.seed)
+        self.action_space.seed(self.seed) if self.action_space is not None else None
+
+    def predict(self, state: Any, deterministic: bool = False):
+        assert self.action_space is not None
+        action = self.action_space.sample()
+        return action, {}
+
+    def learn(self, eval_schedule_list: list[int]):
+        for i in eval_schedule_list:
+            self.eval_model(current_step=i)
+
+        return self
+
 
 
 class Algo(Enum):
@@ -12,6 +45,7 @@ class Algo(Enum):
     DQN = DQN
     DDPG = DDPG
     TD3 = TD3
+    RANDOM = RandomAgent
     # TODO: The other algorithms from stable baselines or elsewhere
 
 
@@ -33,35 +67,30 @@ class BaseAgent(Protocol):
         train_env.reset(seed=seed)
 
         self.agents = None
+        self.random_agent = None
 
-        if algos is PPO:
+        if len(algos) == 1 and algos[0] == Algo.PPO:
             self.agents = PPO("MlpPolicy", train_env, seed=seed)
-        elif algos is [SAC]:
-            self.agents = SAC("MlpPolicy", train_env, seed=seed)
-        elif algos is [A2C]:
-            self.agents = A2C("MlpPolicy", train_env, seed=seed)
-        elif algos is [DQN]:
-            self.agents = DQN("MlpPolicy", train_env, seed=seed)
-        elif algos is [DDPG]:
-            self.agents = DDPG("MlpPolicy", train_env, seed=seed)
-        elif algos is [TD3]:
-            self.agents = TD3("MlpPolicy", train_env, seed=seed)
+        elif len(algos) == 1 and algos[0] == Algo.RANDOM:
+            self.random_agent = RandomAgent(action_space=train_env.action_space, seed=seed)
         else:
             raise ValueError(f"Model {algos} not supported")
 
-    def learn(self, total_steps: int, eval_fn: Callable | None = None) -> None:
+    def learn(self, total_steps: int, eval_fn: Callable | None = None, eval_schedule_list: list[int]=None) -> None:
         """
         Learn for a certain number of steps optionally doing eval.
 
         :param total_steps: number of steps to learn
         :param (optional) eval_fn: evaluation fn to call during learning
         """
-        if self.agents is not None:
-            if eval_fn is not None:
+        if eval_fn is not None:
+            if self.agents is not None:
                 callback = SB3Callback(eval_model=eval_fn, total_timesteps=total_steps)
                 return self.agents.learn(total_steps, callback=callback, log_interval=None)
-            else:
-                self.agents.learn(total_steps, callback=callback, log_interval=None)
+            
+            elif self.random_agent is not None:
+                self.random_agent.eval_model = eval_fn
+                self.random_agent.learn(eval_schedule_list=eval_schedule_list)
 
     def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
         """
@@ -71,7 +100,10 @@ class BaseAgent(Protocol):
         :param deterministic: whether to use deterministic action selection
         :return: action to take
         """
-        action, _ = self.agents.predict(obs, deterministic=True)
+        if self.agents is not None:
+            action, _ = self.agents.predict(obs, deterministic=True)
+        elif self.random_agent is not None:
+             action, _ = self.random_agent.predict(obs, deterministic=True)   
         return action
 
     def save(self, path: str) -> None:

@@ -88,15 +88,14 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 @dataclass
 class TrainingConfig:
-    steps: int = 10000
+    steps: int = 1000000
 
     seeds: list[int] = field(default_factory=lambda: [0, 1, 2])
     use_fixed_env_seeds: bool = True
     fixed_env_seeds: tuple[int, int] = (2, 3)
 
-    eval_phases: int = 5
-    eval_episodes: int = 5
-    save_freq: int = 0
+    eval_phases: int = 20
+    eval_episodes: int = 20
 
     hyper_params: Params = field(default_factory=Params)
 
@@ -126,7 +125,7 @@ def save_training_config(config: TrainingConfig, dir: str):
 
 
 def load_training_config(
-    dir: str = "python", training_args: Optional[dict[str, Optional[Any]]] = None
+    dir: str = "src", training_args: Optional[dict[str, Optional[Any]]] = None
 ):
     file_path = f"{dir}/training_config.yaml"
     train_config = None
@@ -149,7 +148,7 @@ def load_training_config(
             params: Params = config["hyper_params"]
             params.network_type = getattr(NetworkType, params.network_type)
             params.activation = getattr(t.nn, params.activation)
-            params.buffer_type = getattr(BufferType, params.buffer_type)
+            params.buffer_type = getattr(BUFFER_TYPE, params.buffer_type)
         except Exception:
             print("Could not load hyperparams config --- might be old. Using default instead")
             config["hyper_params"] = Params()
@@ -183,7 +182,7 @@ def __overide_config(
             continue
         if key == BUFFER_TYPE:
             print(f"Setting {key} to {value}")
-            train_config.hyper_params.buffer_type = getattr(BufferType, value)
+            train_config.hyper_params.buffer_type = getattr(BUFFER_TYPE, value)
             continue
 
         if hasattr(train_config.hyper_params, key):

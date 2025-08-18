@@ -9,25 +9,20 @@ import gymnasium as gym
 import numpy as np
 import pandas as pd
 import torch
-from stable_baselines3 import DDPG, PPO, SAC
 
-from agents.baseAgent import BaseAgent
+from agents.baseAgent import Algo, BaseAgent
 from tuning.training_config import load_training_config, save_training_config
 from utils.eval_model import eval
-from utils.logging import (EVAL_COLS, TRAINING_STEP_COL,  # moving average
-                           save_rolling_avg)
+from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
 
 
 def train(
     # model: Union[type, str],
-    model: type,
+    model: list[type],
     model_dir: str,
     env_id: str,
     device="cpu",
-    worker_id=0,
-    speed=16.0,
     training_args: dict[str, Optional[Any]] = None,
-    record_training=False,
 ):
     training_config = load_training_config(training_args=training_args)
 
@@ -36,10 +31,9 @@ def train(
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
 
-    save_freq = training_config.save_freq if not isinstance(model, str) else 0
     params = training_config.hyper_params
 
-    model_name = model.__name__ if isinstance(model, type) else model
+    model_name = f"{'_'.join([a.name for a in model])}"
 
     print(
         f"""Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | fixed env seeds: {training_config.use_fixed_env_seeds}"""
@@ -48,11 +42,8 @@ def train(
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases
-    # save_schedule = 0
-    # if save_freq != 0:
-    #     save_phases = eval_phases // save_freq
-    #     save_schedule = total_steps // save_phases if eval_phases > save_freq else eval_schedule
-
+    eval_schedule_list = [eval_schedule * i for i in range(eval_phases + 1)]   # für RandomAgent
+    
     result_cols = EVAL_COLS
     interval_steps = [
         i * eval_schedule for i in range(0, eval_phases + 1)
@@ -100,30 +91,12 @@ def train(
                 # intermediate_results_dir = 
             )
 
-            train_logger = None
-            # if record_training:
-            #     train_logger = TrainLogger(
-            #         f"{seed_dir}/training", tensorboard=True, log_interval=10
-            #     )
 
-            # agent.learn(
-            #     total_timesteps=total_steps,
-            #     eval_fn=training_fn,
-            #     eval_schedule=eval_schedule,
-            #     evals=eval_phases,
-            #     train_logger=train_logger,
-            # )
             agent.learn(
                 total_steps=total_steps,
-                eval_fn=training_fn
+                eval_fn=training_fn,
+                eval_schedule_list=eval_schedule_list
             )
-
-            # if (
-            #     results_dir is None
-            # ):  # disable bc saving now at every eval iteration instead of at the end
-            #     train_df = pd.DataFrame(training_results, columns=result_cols, index=interval_steps)
-            #     train_df.index.name = "Training Step"
-            #     train_df.to_csv(f"{seed_dir}/training_results.csv", index=True)
 
             # not saving for RandomAgent and MysteryModel
             # if isinstance(model, type):
@@ -162,15 +135,19 @@ def train(
 def main():
     # Create Arguments
     parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     "--model",
+    #     help="PPO | SAC | A2C | DQN | TD3 | DDPG | Random",
+    #     type=str,
+    #     default="Random",
+    #     nargs="?",
+    # )
     parser.add_argument(
-        "--model",
-        help="PPO | SAC | A2C | DQN | TD3 | DDPG | Random",
+        "--algos",
+        help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default="PPO",
-        nargs="?",
-    )
-    parser.add_argument(
-        "--worker_id", help="Set Worker-ID for Parallelism", type=int, default=0, nargs="?"
+        default=["PPO"],
+        nargs="+",
     )
     parser.add_argument("--save_postfix", help="save_postfix", type=str, default="", nargs="?")
     parser.add_argument(
@@ -182,30 +159,35 @@ def main():
 
     args = parser.parse_args()
 
-    # game_path_name = "GAME_PATH"
-    # base_dir = "python/results/sparse_reward/million_steps"
-    base_dir = "src/test/metrics"
+    base_dir = "src/test"
 
     # device = "cpu"  # if network is simple MLP, CPU is preferred for SAC!
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    if args.model == "DDPG":
-        model = DDPG
-    elif args.model == "SAC":  # cannot parse type directly
-        model = SAC
-    elif args.model == "PPO":  # cannot parse type directly
-        model = PPO
-    elif args.model == "Random":
-        model = args.model
-    else:
-        raise ValueError(f"Model {args.model} not supported")
+
+    # Validierung der Algorithmen
+    valid_algos = []
+    invalid = []
+    for token in args.algos:
+        token_upper = token.upper()
+        if token_upper in Algo.__members__:
+            valid_algos.append(Algo[token_upper])
+        else:
+            invalid.append(token)
+
+    if invalid:
+        raise SystemExit(
+            f"Ungültige Algorithmen: {', '.join(invalid)}\n"
+            f"Erlaubt: {', '.join([a.name for a in Algo])}"
+        )
+    
 
     save_postfix = args.save_postfix
 
     if save_postfix != "":
         save_postfix = f"_{save_postfix}"
 
-    model_dir = f"{base_dir}/{args.model}{save_postfix}"
+    model_dir = f"{base_dir}/{args.env_id}/{'_'.join([a.name for a in valid_algos])}{save_postfix}"
 
     # Überprüfung der Nutzereingabe 
     if args.env_id not in gym.registry:
@@ -216,11 +198,10 @@ def main():
 
     # automatically loads training_config from main directory!, creates if not exists
     train(
-        model=model,
+        model=valid_algos,
         model_dir=model_dir,
         env_id=env_id,
         device=device,
-        worker_id=args.worker_id,
     )
 
     # plot_stats(model, base_dir=base_dir)
