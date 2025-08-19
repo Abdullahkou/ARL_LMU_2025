@@ -63,7 +63,7 @@ def save_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1
     rolling_avg.to_csv(file_name)
 
 
-def save_mean(arr: np.ndarray | list | deque):
+def safe_mean(arr: np.ndarray | list | deque):
     """-- Credit to sb3 --
     Compute the mean of an array if there is at least one element.
     For empty array, return NaN. It is used for logging only.
@@ -74,7 +74,7 @@ def save_mean(arr: np.ndarray | list | deque):
     return np.nan if len(arr) == 0 else float(np.mean(arr))  # type: ignore[arg-type]
 
 
-def save_min(arr: np.ndarray | list | deque):
+def safe_min(arr: np.ndarray | list | deque):
     """-- Credit to sb3 --
     Compute the min of an array if there is at least one element.
     For empty array, return NaN. It is used for logging only.
