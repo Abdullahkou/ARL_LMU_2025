@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import Any, Callable, Optional, Protocol
 
@@ -35,6 +36,17 @@ class RandomAgent:
             self.eval_model(current_step=i)
 
         return self
+    
+    def save(self, path: str):
+        data = {"seed": self.seed}
+        with open(path + ".json", "w") as f:
+            json.dump(data, f)
+
+    @classmethod
+    def load(cls, path: str, action_space):
+        with open(path + ".json", "r") as f:
+            data = json.load(f)
+        return cls(action_space=action_space, seed=data["seed"])
 
 
 
@@ -47,6 +59,19 @@ class Algo(Enum):
     TD3 = TD3
     RANDOM = RandomAgent
     # TODO: The other algorithms from stable baselines or elsewhere
+
+ALGO_IMPLS = {
+    "PPO":    lambda env, seed: PPO("MlpPolicy", env, seed=seed),
+    "A2C":    lambda env, seed: A2C("MlpPolicy", env, seed=seed),
+    "DQN":    lambda env, seed: DQN("MlpPolicy", env, seed=seed),
+    "SAC":    lambda env, seed: SAC("MlpPolicy", env, seed=seed),
+    "DDPG":    lambda env, seed: DDPG("MlpPolicy", env, seed=seed),
+    "TD3":    lambda env, seed: TD3("MlpPolicy", env, seed=seed),
+    "RANDOM": lambda env, seed: RandomAgent(
+        action_space=env.action_space,
+        seed=seed,
+    ),
+}
 
 
 class BaseAgent(Protocol):
@@ -69,12 +94,16 @@ class BaseAgent(Protocol):
         self.agents = None
         self.random_agent = None
 
-        if len(algos) == 1 and algos[0] == Algo.PPO:
-            self.agents = PPO("MlpPolicy", train_env, seed=seed)
-        elif len(algos) == 1 and algos[0] == Algo.RANDOM:
-            self.random_agent = RandomAgent(action_space=train_env.action_space, seed=seed)
-        else:
-            raise ValueError(f"Model {algos} not supported")
+        agents = []
+        for algo_name in algos:
+            builder = ALGO_IMPLS[algo_name]
+            agent = builder(train_env, seed)
+            agents.append(agent)
+
+        # Teste für einzelene Algorithmen
+        if len(agents) == 1:
+            self.agents = agents[0]   
+
 
     def learn(self, total_steps: int, eval_fn: Callable | None = None, eval_schedule_list: list[int]=None) -> None:
         """
@@ -84,13 +113,12 @@ class BaseAgent(Protocol):
         :param (optional) eval_fn: evaluation fn to call during learning
         """
         if eval_fn is not None:
-            if self.agents is not None:
+            if isinstance(self.agents, RandomAgent):
+                self.agents.eval_model = eval_fn
+                self.agents.learn(eval_schedule_list=eval_schedule_list)
+            else:
                 callback = SB3Callback(eval_model=eval_fn, total_timesteps=total_steps)
                 return self.agents.learn(total_steps, callback=callback, log_interval=None)
-            
-            elif self.random_agent is not None:
-                self.random_agent.eval_model = eval_fn
-                self.random_agent.learn(eval_schedule_list=eval_schedule_list)
 
     def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
         """
@@ -106,21 +134,32 @@ class BaseAgent(Protocol):
              action, _ = self.random_agent.predict(obs, deterministic=True)   
         return action
 
-    def save(self, path: str) -> None:
+    def save(self, algo_name: str, path: str) -> None:
         """
         Save the agent's state to a file.
 
+        :algo_name: name of the algorithm
         :param path: path to save the agent's state to
         """
-        pass
+        if hasattr(self.agents, "save"):
+            self.agents.save(path + "_" + algo_name)
+        else:
+            raise TypeError(f"Agent {algo_name} hat keine save()-Methode")
 
-    def load(self, path: str) -> None:
+    def load(self, algo_name: str, path: str, env, action_space=None) -> None:
         """
         Load the agent's state from a file.
 
         :param path: path to load the agent's state from
         """
-        pass
+        if algo_name in ["PPO", "A2C", "SAC", "TD3", "DDPG", "DQN"]:
+            # SB3-Loader
+            AlgoClass = getattr(__import__("stable_baselines3"), algo_name)
+            return AlgoClass.load(path + "_" + algo_name, env=env)
+        elif algo_name == "RANDOM":
+            return RandomAgent.load(path + "_" + algo_name, action_space)
+        else:
+            raise ValueError(f"Unbekannter Algorithmus: {algo_name}")
 
 
 from stable_baselines3.common.callbacks import BaseCallback

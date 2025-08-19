@@ -14,6 +14,7 @@ from agents.baseAgent import Algo, BaseAgent
 from tuning.training_config import load_training_config, save_training_config
 from utils.eval_model import eval
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
+from utils.validate_algos import check_compat
 
 
 def train(
@@ -33,7 +34,7 @@ def train(
 
     params = training_config.hyper_params
 
-    model_name = f"{'_'.join([a.name for a in model])}"
+    model_name = f"{'_'.join([a for a in model])}"
 
     print(
         f"""Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | fixed env seeds: {training_config.use_fixed_env_seeds}"""
@@ -62,6 +63,8 @@ def train(
                 env_seeds = training_config.fixed_env_seeds
 
             train_env = gym.make(env_id)
+            model = check_compat(model, train_env.action_space)
+            print("Verwendete Algorithmen:", model)
 
             eval_env = gym.make(env_id)
             eval_env.reset(seed=env_seeds[1])
@@ -98,9 +101,12 @@ def train(
                 eval_schedule_list=eval_schedule_list
             )
 
-            # not saving for RandomAgent and MysteryModel
-            # if isinstance(model, type):
-            #     agent.save_policy(seed_dir)
+            # speichere alle Modelle
+            agent_model_dir = f"{model_dir}/models"
+            if not os.path.exists(agent_model_dir):
+                os.makedirs(agent_model_dir)
+
+            agent.save(algo_name=model_name, path=f"{agent_model_dir}/seed_{seed}")
 
             seeds_results.append(training_results)
 
@@ -135,18 +141,12 @@ def train(
 def main():
     # Create Arguments
     parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #     "--model",
-    #     help="PPO | SAC | A2C | DQN | TD3 | DDPG | Random",
-    #     type=str,
-    #     default="Random",
-    #     nargs="?",
-    # )
+    
     parser.add_argument(
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["PPO"],
+        default=["SAC"],
         nargs="+",
     )
     parser.add_argument("--save_postfix", help="save_postfix", type=str, default="", nargs="?")
@@ -154,7 +154,7 @@ def main():
         "--env_id",
         help="Name der Gymnasium-Umgebung, z. B. 'CartPole-v1' oder 'MountainCar-v0'",
         type=str,
-        default="CartPole-v1",   # Standard-Umgebung
+        default="Pendulum-v1",   # Standard-Umgebung
     )
 
     args = parser.parse_args()
@@ -171,7 +171,7 @@ def main():
     for token in args.algos:
         token_upper = token.upper()
         if token_upper in Algo.__members__:
-            valid_algos.append(Algo[token_upper])
+            valid_algos.append(token_upper)
         else:
             invalid.append(token)
 
@@ -187,7 +187,7 @@ def main():
     if save_postfix != "":
         save_postfix = f"_{save_postfix}"
 
-    model_dir = f"{base_dir}/{args.env_id}/{'_'.join([a.name for a in valid_algos])}{save_postfix}"
+    model_dir = f"{base_dir}/{args.env_id}/{'_'.join([a for a in valid_algos])}{save_postfix}"
 
     # Überprüfung der Nutzereingabe 
     if args.env_id not in gym.registry:
@@ -205,14 +205,6 @@ def main():
     )
 
     # plot_stats(model, base_dir=base_dir)
-
-    # export_ONNX(
-    #     model,
-    #     model_dir=model_dir,
-    #     policy_dir=f"{model_dir}/seed_1",  # change this if not applicable
-    #     device=device,
-    #     game_path_name=game_path_name,
-    # )
 
 
 if __name__ == "__main__":
