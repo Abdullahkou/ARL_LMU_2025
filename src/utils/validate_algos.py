@@ -47,3 +47,12 @@ def check_compat(valid_algos: list[str], action_space: gym.spaces.Space) -> list
             f"{type(action_space).__name__}: {', '.join(skipped)}"
         )
     return compatible
+
+def choose_effective_algos(requested_algos: list[str], env_id: str) -> list[str]:
+    # 1) Probe-Env nur für den Action-Space
+    probe = gym.make(env_id)
+    try:
+        effective = check_compat(requested_algos, probe.action_space)  # deine Funktion von zuvor
+    finally:
+        probe.close()
+    return effective

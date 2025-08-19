@@ -92,7 +92,6 @@ class BaseAgent(Protocol):
         train_env.reset(seed=seed)
 
         self.agents = None
-        self.random_agent = None
 
         agents = []
         for algo_name in algos:
@@ -129,9 +128,7 @@ class BaseAgent(Protocol):
         :return: action to take
         """
         if self.agents is not None:
-            action, _ = self.agents.predict(obs, deterministic=True)
-        elif self.random_agent is not None:
-             action, _ = self.random_agent.predict(obs, deterministic=True)   
+            action, _ = self.agents.predict(obs, deterministic=True) 
         return action
 
     def save(self, algo_name: str, path: str) -> None:

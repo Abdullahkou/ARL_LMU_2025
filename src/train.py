@@ -14,7 +14,7 @@ from agents.baseAgent import Algo, BaseAgent
 from tuning.training_config import load_training_config, save_training_config
 from utils.eval_model import eval
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
-from utils.validate_algos import check_compat
+from utils.validate_algos import check_compat, choose_effective_algos
 
 
 def train(
@@ -63,8 +63,8 @@ def train(
                 env_seeds = training_config.fixed_env_seeds
 
             train_env = gym.make(env_id)
-            model = check_compat(model, train_env.action_space)
-            print("Verwendete Algorithmen:", model)
+            #model = check_compat(model, train_env.action_space)
+            #print("Verwendete Algorithmen:", model)
 
             eval_env = gym.make(env_id)
             eval_env.reset(seed=env_seeds[1])
@@ -146,7 +146,7 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["SAC"],
+        default=["Random"],
         nargs="+",
     )
     parser.add_argument("--save_postfix", help="save_postfix", type=str, default="", nargs="?")
@@ -154,7 +154,7 @@ def main():
         "--env_id",
         help="Name der Gymnasium-Umgebung, z. B. 'CartPole-v1' oder 'MountainCar-v0'",
         type=str,
-        default="Pendulum-v1",   # Standard-Umgebung
+        default="MountainCarContinuous-v0",   # Standard-Umgebung
     )
 
     args = parser.parse_args()
@@ -187,7 +187,9 @@ def main():
     if save_postfix != "":
         save_postfix = f"_{save_postfix}"
 
-    model_dir = f"{base_dir}/{args.env_id}/{'_'.join([a for a in valid_algos])}{save_postfix}"
+    
+    effective_algos = choose_effective_algos(valid_algos, args.env_id)  # wirft Fehler bei Single+inkompatibel
+    model_dir = f"{base_dir}/{args.env_id}/{'_'.join([a for a in effective_algos])}{save_postfix}"
 
     # Überprüfung der Nutzereingabe 
     if args.env_id not in gym.registry:
@@ -198,7 +200,7 @@ def main():
 
     # automatically loads training_config from main directory!, creates if not exists
     train(
-        model=valid_algos,
+        model=effective_algos,
         model_dir=model_dir,
         env_id=env_id,
         device=device,
