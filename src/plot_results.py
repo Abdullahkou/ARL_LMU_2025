@@ -85,7 +85,7 @@ def plot_results(
 
 def main():
     base_dir = f"results/test/MountainCarContinuous-v0/{TRAIN_DIR}"
-    save_dir = f"{base_dir}/plots"
+    save_dir = f"{base_dir}/_plots"
 
     agents = {
         RANDOM_AGENT: (
