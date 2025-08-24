@@ -3,7 +3,7 @@ import csv
 import os
 import traceback
 from functools import partial
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import gymnasium as gym
 import numpy as np
@@ -14,11 +14,10 @@ from agents.baseAgent import Algo, BaseAgent
 from tuning.training_config import load_training_config, save_training_config
 from utils.eval_model import eval
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
-from utils.validate_algos import check_compat, choose_effective_algos
+from utils.validate_algos import choose_effective_algos
 
 
 def train(
-    # model: Union[type, str],
     model: list[type],
     model_dir: str,
     env_id: str,
@@ -63,19 +62,19 @@ def train(
                 env_seeds = training_config.fixed_env_seeds
 
             train_env = gym.make(env_id)
-            #model = check_compat(model, train_env.action_space)
-            #print("Verwendete Algorithmen:", model)
 
             eval_env = gym.make(env_id)
             eval_env.reset(seed=env_seeds[1])
 
             agent = BaseAgent(algos=model, train_env=train_env, device=device, seed=env_seeds[0], hyper_params=params)
-            seed_dir = f"{model_dir}/seed_{seed}"
+            
+            seed_dir = f"{model_dir}/seeds"
 
             if not os.path.exists(seed_dir):
                 os.makedirs(seed_dir)
 
-            with open(f"{seed_dir}/training_results.csv", "w", newline="") as f:
+            save_seed_results = f"{seed_dir}/seed_{seed}.csv"
+            with open(save_seed_results, "w", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow([TRAINING_STEP_COL] + EVAL_COLS)
 
@@ -91,6 +90,7 @@ def train(
                 results_dir=results_dir,
                 training_results=training_results,
                 num_episodes=num_episodes,
+                save_file = save_seed_results,
                 # intermediate_results_dir = 
             )
 
@@ -146,40 +146,46 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["Random"],
+        default=["a2c"],
         nargs="+",
     )
-    parser.add_argument("--save_postfix", help="save_postfix", type=str, default="", nargs="?")
+    parser.add_argument("--save_postfix", help="save_postfix", type=str, default="2", nargs="?")
     parser.add_argument(
         "--env_id",
-        help="Name der Gymnasium-Umgebung, z. B. 'CartPole-v1' oder 'MountainCar-v0'",
+        help="Name der Gymnasium-Umgebung, z. B. 'CartPole-v1' oder 'MountainCarContinuous-v0'",
         type=str,
-        default="MountainCarContinuous-v0",   # Standard-Umgebung
+        default="CartPole-v1",   # Standard-Umgebung
     )
 
     args = parser.parse_args()
-
-    base_dir = "src/test"
 
     # device = "cpu"  # if network is simple MLP, CPU is preferred for SAC!
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-    # Validierung der Algorithmen
-    valid_algos = []
-    invalid = []
-    for token in args.algos:
-        token_upper = token.upper()
-        if token_upper in Algo.__members__:
-            valid_algos.append(token_upper)
-        else:
-            invalid.append(token)
+    # Überprüfung der Nutzereingabe 
+    if args.env_id not in gym.registry:
+        raise SystemExit(f"Ungültige Umgebung: {args.env_id}.\n"
+                         f"Verfügbare sind z. B.: {list(gym.registry.keys())[:10]}")
+    env_id = args.env_id
 
-    if invalid:
+
+    if len(args.algos) > 1:
         raise SystemExit(
-            f"Ungültige Algorithmen: {', '.join(invalid)}\n"
+            f"Bitte nur einen Algorithmus angeben!"
+        )
+
+    # Validierung der Algorithmen
+    model_name = args.algos[0].upper()
+    valid_algos = []
+
+    if model_name not in Algo._member_names_:
+        raise SystemExit(
+            f"Ungültiger Algorithmus: {model_name}\n"
             f"Erlaubt: {', '.join([a.name for a in Algo])}"
         )
+    else:
+        valid_algos.append(model_name)
     
 
     save_postfix = args.save_postfix
@@ -189,14 +195,9 @@ def main():
 
     
     effective_algos = choose_effective_algos(valid_algos, args.env_id)  # wirft Fehler bei Single+inkompatibel
-    model_dir = f"{base_dir}/{args.env_id}/{'_'.join([a for a in effective_algos])}{save_postfix}"
 
-    # Überprüfung der Nutzereingabe 
-    if args.env_id not in gym.registry:
-        raise ValueError(f"Ungültige Umgebung: {args.env_id}. "
-                         f"Verfügbare sind z. B.: {list(gym.registry.keys())[:10]}")
-    env_id = args.env_id
-
+    base_dir = "src/test"
+    model_dir = f"{base_dir}/{args.env_id}/train/{effective_algos[0]}{save_postfix}"
 
     # automatically loads training_config from main directory!, creates if not exists
     train(

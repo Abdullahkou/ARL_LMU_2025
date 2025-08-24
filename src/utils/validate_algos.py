@@ -40,16 +40,18 @@ def check_compat(valid_algos: list[str], action_space: gym.spaces.Space) -> list
             f"{type(action_space).__name__}.\n"
             "Bitte die Auswahl oder die Umgebung anpassen."
         )
+    
     skipped = [n for n in valid_algos if n not in compatible]
     if skipped:
-        print(
-            "Hinweis: Überspringe inkompatible Algorithmen für "
-            f"{type(action_space).__name__}: {', '.join(skipped)}"
+        raise SystemExit(
+            "Angegebener Algorithmus ist nicht mit der Umgebung kompatibel!\n"
+            f"{type(action_space).__name__}: {', '.join(skipped)}\n"
+            "Bitte die Auswahl oder die Umgebung anpassen."
         )
     return compatible
 
 def choose_effective_algos(requested_algos: list[str], env_id: str) -> list[str]:
-    # 1) Probe-Env nur für den Action-Space
+    # Probe-Env nur für den Action-Space
     probe = gym.make(env_id)
     try:
         effective = check_compat(requested_algos, probe.action_space)  # deine Funktion von zuvor
