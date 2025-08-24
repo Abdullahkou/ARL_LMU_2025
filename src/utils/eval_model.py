@@ -14,6 +14,7 @@ def eval(
     eval_env: Env,
     steps_until_next_eval: int,
     num_episodes: int,
+    save_file:str,
     intermediate_results_dir: str | None = None,
 ):
     if current_step % steps_until_next_eval != 0:
@@ -21,8 +22,6 @@ def eval(
 
     eval_ep = current_step // steps_until_next_eval
     print(f"Starting evaluation {eval_ep}")
-
-    save_file = f"{results_dir}/training_results.csv"
 
     if eval_ep == 0:
         with open(save_file, "w", newline="") as f:
