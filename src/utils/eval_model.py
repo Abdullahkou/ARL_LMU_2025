@@ -1,11 +1,12 @@
 import csv
+import os
 
 from gymnasium import Env
 
 from agents.baseAgent import BaseAgent
+from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 
-import os
 
 def eval(
     current_step: int,
@@ -15,7 +16,7 @@ def eval(
     eval_env: Env,
     steps_until_next_eval: int,
     num_episodes: int,
-    save_file:str,
+    save_file: str,
     intermediate_results_dir: str | None = None,
     save_model: bool = True,
 ):
@@ -32,7 +33,9 @@ def eval(
 
     intermediate_results_file = None
     if intermediate_results_dir is not None:
-        intermediate_results_file = f"{intermediate_results_dir}/eval_{eval_ep}.csv"
+        intermediate_results_file = (
+            f"{intermediate_results_dir}/{INTERMEDIATE_RESULTS_PREFIX}{eval_ep}.csv"
+        )
 
     ep_logger = EpisodeLogger(intermediate_results_file=intermediate_results_file)
 
@@ -50,7 +53,7 @@ def eval(
         ep_logger.log_episode()
 
     results = ep_logger.get_eps_mean()
-    row = (eval_ep,) + results
+    row = (current_step,) + results
 
     with open(save_file, "a", newline="") as f:
         writer = csv.writer(f)
@@ -60,6 +63,6 @@ def eval(
     print(f"Evaluation {eval_ep} Finished")
 
     if save_model:
-        model_path = os.path.join(results_dir, f"model_eval_{eval_ep}")
-        model.save(model_path)
+        model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
+        model.save(model.agents.__class__.__name__, model_path)
         print(f"Model saved at {model_path}")

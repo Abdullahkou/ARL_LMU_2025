@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
+from tuning.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE, TRAIN_DIR
 from utils.logging import REWARD, STEPS
 
 
@@ -47,9 +48,8 @@ def plot_results(
 
         for idx, (agent_name, (mean, std)) in enumerate(results_to_plot.items()):
             # random agent represented by horizontal line due to no training progress
-            # TODO: refactor magic str "Random" to imported constant
-            if agent_name == "Random":
-                assert std is None, "Random agent should not have std!"
+            if agent_name == RANDOM_AGENT:
+                std = None  # no std
 
                 plt.axhline(
                     y=np.nanmean(mean, axis=0),
@@ -62,7 +62,7 @@ def plot_results(
 
             plt.plot(x_vals, mean, label=agent_name, linewidth=2, color=f"C{idx}")
 
-            if std is not None:
+            if std is None:
                 continue
 
             plt.fill_between(x_vals, mean - std, mean + std, alpha=0.3, color=f"C{idx}")
@@ -82,11 +82,22 @@ def plot_results(
 
 
 def main():
-    base_dir = "results/test"
+    base_dir = f"results/test/CartPole-v1/{TRAIN_DIR}"
     save_dir = f"{base_dir}/plots"
 
     agents = {
-        "Random": (f"{base_dir}/Random/sma_mean.csv", f"{base_dir}/Random/sma_std.csv"),
+        RANDOM_AGENT: (
+            f"{base_dir}/RANDOM_2/{SMA_MEAN_FILE}",
+            f"{base_dir}/RANDOM_2/{SMA_STD_FILE}",
+        ),
+        "A2C": (
+            f"{base_dir}/A2C_2/{SMA_MEAN_FILE}",
+            f"{base_dir}/A2C_2/{SMA_STD_FILE}",
+        ),
+        "PPO": (
+            f"{base_dir}/PPO_2/{SMA_MEAN_FILE}",
+            f"{base_dir}/PPO_2/{SMA_STD_FILE}",
+        ),
     }
 
     plot_results(agents, save_dir=save_dir)
