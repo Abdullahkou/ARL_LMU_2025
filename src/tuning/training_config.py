@@ -82,7 +82,8 @@ def save_training_config(config: TrainingConfig, dir: str):
     with open(f"{dir}/training_config.yaml", "w") as file:
         dict = asdict(config)
 
-        params = dict["hyper_params"]
+        # TODO:
+        # params = dict["hyper_params"]
 
         yaml.safe_dump(dict, file, indent=4)
 
@@ -102,7 +103,8 @@ def load_training_config(
             params_dict: dict = config["hyper_params"]
 
             config["hyper_params"] = Params(**params_dict)
-            params: Params = config["hyper_params"]
+        # TODO:
+        # params: Params = config["hyper_params"]
 
         except Exception:
             traceback.print_exc()
