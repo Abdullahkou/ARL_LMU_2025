@@ -82,7 +82,7 @@ def train(
                 algos=models,
                 train_env=train_env,
                 device=device,
-                seed=env_seeds[0],
+                seed=seed,
                 hyper_params=params,
             )
 
