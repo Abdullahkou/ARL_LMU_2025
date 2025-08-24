@@ -5,6 +5,7 @@ from gymnasium import Env
 from agents.baseAgent import BaseAgent
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 
+import os
 
 def eval(
     current_step: int,
@@ -16,6 +17,7 @@ def eval(
     num_episodes: int,
     save_file:str,
     intermediate_results_dir: str | None = None,
+    save_model: bool = True,
 ):
     if current_step % steps_until_next_eval != 0:
         return
@@ -56,3 +58,8 @@ def eval(
 
     training_results.append(results)
     print(f"Evaluation {eval_ep} Finished")
+
+    if save_model:
+        model_path = os.path.join(results_dir, f"model_eval_{eval_ep}.pth")
+        model.save(model_path)
+        print(f"Model saved at {model_path}")
