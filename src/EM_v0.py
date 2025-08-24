@@ -4,78 +4,107 @@ from stable_baselines3 import PPO, SAC, A2C, DQN, TD3, DDPG
 from typing import List, Dict
 import numpy as np
 from scipy.stats import mode
+from collections.abc import Callable
+from enum import Enum
+from dataclasses import dataclass, field
 
 #from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
+class Algo(Enum):
+    PPO = PPO
+    SAC = SAC
+    A2C = A2C
+    DQN = DQN
+    TD3 = TD3,
+    DDPG = DDPG
+    # TODO: The other algorithms from stable baselines or elsewhere
+@dataclass
+class Learner:
+    algo: Algo
+    params: Dict # TODO: maybe refine type later
+    training_history: List = field(default_factory=list)
+
+
+
+class CombinationMethod:
+    def __init__(self, combinationFn: Callable, is_discrete: bool):
+        self.combinationFn = combinationFn
+        self.is_discrete = is_discrete
+
+    def __call__(self, actionValues: List[int]):
+        return self.combinationFn(actionValues)
+
+majority_vote = CombinationMethod(
+    combinationFn = lambda action_values: mode(action_values, axis=0, keepdims=False)[0],
+    is_discrete = True,
+)
+
+action_average = CombinationMethod(
+    combinationFn = lambda action_values: np.mean(action_values, axis=0),
+    is_discrete=False,
+)
+
 class EnsembleRL:
-    ALGOS = {
-        "PPO": PPO,
-        "SAC": SAC,
-        "A2C": A2C,
-        "DQN": DQN,
-        "TD3": TD3,
-        "DDPG": DDPG 
-    }
-    
-    def __init__(self, env_id: str, algos: List[str], total_timesteps=10000, algo_params: Dict = None, render_interval=2000):
+    def __init__(self, env_id: str, learners: List[Learner], combination_method: CombinationMethod, total_timesteps=10000, render_interval=2000):
         self.env_id = env_id
-        self.algos = algos
+        self.learners = learners
         self.total_timesteps = total_timesteps
         self.render_interval = render_interval  # Schritte zwischen den Live-Demos
-        self.algo_params = algo_params if algo_params else {}
+        self.combination_method = combination_method
         
         self.envs = []
         self.models = []
         self._init_models()
 
     def _init_models(self):
-        for algo_name in self.algos:
-            if algo_name not in self.ALGOS:
-                raise ValueError(f"Algorithm {algo_name} not supported. Available: {list(self.ALGOS.keys())}")
-            
-            
+        for learner in self.learners:     
             env = gym.make(self.env_id)
-            model_class = self.ALGOS[algo_name]
-            params = self.algo_params.get(algo_name, {})
-            model = model_class("MlpPolicy", env, verbose=0, **params)
+
+            is_discrete_env = isinstance(env.action_space, gym.spaces.Discrete)
+            if (is_discrete_env ^ self.combination_method.is_discrete):
+                raise ValueError(f"Environment is {"discrete" if is_discrete_env else "continuous"} but the combination method is {"discrete" if self.combination_method.is_discrete else "continuous"}")
+
+            model_class = learner.algo.value
+            model = model_class("MlpPolicy", env, verbose=0, **learner.params)
             
             self.envs.append(env)
             self.models.append(model)
 
     def train_WITHOUT_visualization(self):
-        for algo_name, model in zip(self.algos, self.models):
-            print(f"Training {algo_name}...")
+        for algo, model in zip(self.algos, self.models):
+            print(f"Training {algo.name}...")
             model.learn(total_timesteps=self.total_timesteps)
         print("Training abgeschlossen!")
 
 
     def train_with_visualization(self):
         """Trainiert jedes Modell für total_timesteps und zeigt zwischendurch Episoden im Render-Fenster."""
-        for algo_name, model in zip(self.algos, self.models):
+        for learner, model in zip(self.learners, self.models):
             steps_done = 0
-            print(f"\nTraining {algo_name} für {self.total_timesteps} Schritte...")
+            print(f"\nTraining {learner.algo.name} für {self.total_timesteps} Schritte...")
             while steps_done < self.total_timesteps:
                 model.learn(total_timesteps=self.render_interval, reset_num_timesteps=False)
                 steps_done += self.render_interval
 
                 # Live-Demo Episode
-                print(f"Zeige Episode für {algo_name}...")
+                print(f"Zeige Episode für {learner.algo.name}...")
                 demo_env = gym.make(self.env_id, render_mode="human")
                 obs, _ = demo_env.reset()
                 done, truncated = False, False
                 while not (done or truncated):
                     action, _ = model.predict(obs)
                     obs, reward, done, truncated, _ = demo_env.step(action)
+                    learner.training_history.append(reward)
                     time.sleep(0.02)  # langsamer machen für Sichtbarkeit
                 demo_env.close()
-            print(f"\nTraining für {algo_name} abgeschlossen!")
+            print(f"\nTraining für {learner.algo.name} abgeschlossen!")
         print("\nGesamtes Training abgeschlossen!")
 
     def predict(self, obs):
         actions = {}
-        for algo_name, model in zip(self.algos, self.models):
+        for learner, model in zip(self.learners, self.models):
             action, _ = model.predict(obs)
-            actions[algo_name] = action
+            actions[learner.algo.name] = action
         return actions
 
     def close(self):
@@ -102,11 +131,7 @@ class EnsembleRL:
                     actions = self.predict(obs)
                     action_values = list(actions.values())
                     
-                    if is_discrete:
-                        action, _ = mode(action_values, axis=0, keepdims=False)
-                        action = int(action) 
-                    else:
-                        action = np.mean(action_values, axis=0)
+                    action = self.combination_method(action_values)
                     
                     # Führe kombinierte Aktion aus
                     obs, reward, done, truncated, _ = demo_env.step(action)
@@ -115,8 +140,6 @@ class EnsembleRL:
                 print(f"Episode {episode + 1} beendet. Gesamtreward: {total_reward:.2f}")
                 demo_env.close()
             print("\nEnsemble-Demo abgeschlossen!")
-
-
 
 # if __name__ == "__main__":
 #     ensemble = EnsembleRL(
@@ -140,17 +163,16 @@ if __name__ == "__main__":
     # # env_id="LunarLander-v3",
     # "BipedalWalker-v3"
     #
+    learners = [
+        Learner(algo=Algo.PPO, params={"learning_rate": 0.001}),
+        Learner(algo=Algo.SAC, params={"learning_rate": 0.0003}),
+    ]
     ensemble = EnsembleRL(
         env_id="Humanoid-v5",
-        algos=["PPO"],
+        learners=learners,
         total_timesteps=500,
         render_interval=100,  
-        algo_params={
-            "PPO": {"learning_rate": 0.001},
-            #"SAC": {"learning_rate": 0.0003},
-           #"DDPG": {"learning_rate": 0.0003},
-           # "TD3": {"learning_rate": 0.0003}
-        }
+        combination_method=action_average
     )
 
     ensemble.train_with_visualization()
