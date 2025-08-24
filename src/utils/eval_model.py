@@ -60,6 +60,6 @@ def eval(
     print(f"Evaluation {eval_ep} Finished")
 
     if save_model:
-        model_path = os.path.join(results_dir, f"model_eval_{eval_ep}.pth")
+        model_path = os.path.join(results_dir, f"model_eval_{eval_ep}")
         model.save(model_path)
         print(f"Model saved at {model_path}")
