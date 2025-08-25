@@ -1,12 +1,11 @@
-import json
 from typing import Any, Callable, Optional
 
 import gymnasium as gym
 import numpy as np
+from stable_baselines3.common.callbacks import BaseCallback
 
 
 class RandomAgent:
-
     def __init__(
         self,
         action_space: gym.Space = None,
@@ -33,23 +32,6 @@ class RandomAgent:
             self.eval_model(current_step=i)
 
         return self
-    
-    def save(self, path: str):
-        data = {"seed": self.seed}
-        with open(path + ".json", "w") as f:
-            json.dump(data, f)
-
-    @classmethod
-    def load(cls, path: str, action_space):
-        with open(path + ".json", "r") as f:
-            data = json.load(f)
-        return cls(action_space=action_space, seed=data["seed"])
-    
-
-
-
-
-from stable_baselines3.common.callbacks import BaseCallback
 
 
 class SB3Callback(BaseCallback):
@@ -112,4 +94,3 @@ class SB3Callback(BaseCallback):
         This event is triggered before exiting the `learn()` method.
         """
         pass
-

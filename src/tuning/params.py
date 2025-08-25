@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Params:
-    gamma: float = 0.99
-    learning_rate: float = 3e-4
+    # TODO: handle optional parameters, if defaults for sb3, save those!
+    pass
 
 
 def make_dir(base_dir: str):

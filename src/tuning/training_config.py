@@ -10,6 +10,25 @@ import yaml
 
 from tuning.params import Params
 
+########################### CONSTANTS #################################
+
+RANDOM_AGENT = "RANDOM"
+
+MEAN_FILE = "mean.csv"
+SMA_MEAN_FILE = "sma_mean.csv"
+STD_FILE = "std.csv"
+SMA_STD_FILE = "sma_std.csv"
+
+TRAIN_DIR = "train"
+EVAL_DIR = "eval"
+
+MODELS_DIR = "models"
+SEEDS_DIR = "seeds"
+SEED_PREFIX = "seed_"
+TRAINING_RESULTS_FILE = "training_results.csv"
+CHECKPOINT_PREFIX = "checkpoint_"
+INTERMEDIATE_RESULTS_PREFIX = "eval_"
+
 ENV_SEED = "env_seed"
 
 GAMMA = "gamma"
@@ -18,7 +37,6 @@ LR = "lr"
 
 def arg_true(arg: str):
     return arg == "true" or arg == "True" or arg == "1"
-
 
 
 def get_short_hyperparam_name(param: str):
@@ -43,12 +61,11 @@ class CustomJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-
 @dataclass
 class TrainingConfig:
-    steps: int = 1000000
+    steps: int = 100_000
 
-    seeds: list[int] = field(default_factory=lambda: [0, 1, 2])
+    seeds: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])
     use_fixed_env_seeds: bool = True
     fixed_env_seeds: tuple[int, int] = (2, 3)
 
@@ -65,7 +82,8 @@ def save_training_config(config: TrainingConfig, dir: str):
     with open(f"{dir}/training_config.yaml", "w") as file:
         dict = asdict(config)
 
-        params = dict["hyper_params"]
+        # TODO:
+        # params = dict["hyper_params"]
 
         yaml.safe_dump(dict, file, indent=4)
 
@@ -85,11 +103,14 @@ def load_training_config(
             params_dict: dict = config["hyper_params"]
 
             config["hyper_params"] = Params(**params_dict)
-            params: Params = config["hyper_params"]
+        # TODO:
+        # params: Params = config["hyper_params"]
 
         except Exception:
             traceback.print_exc()
-            print("Could not load hyperparams config --- might be old. Using default instead")
+            print(
+                "Could not load hyperparams config --- might be old. Using default instead"
+            )
             config["hyper_params"] = Params()
 
         train_config = TrainingConfig(**config)
@@ -127,7 +148,9 @@ def __overide_config(
     return train_config
 
 
-def create_new_training_config(dir: str, training_args: Optional[dict[str, Optional[Any]]] = None):
+def create_new_training_config(
+    dir: str, training_args: Optional[dict[str, Optional[Any]]] = None
+):
     config = TrainingConfig()
     config = __overide_config(config, training_args)
     save_training_config(config, dir)

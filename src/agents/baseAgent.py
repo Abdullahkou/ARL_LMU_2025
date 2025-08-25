@@ -6,6 +6,7 @@ import numpy as np
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 
 from agents.models import RandomAgent, SB3Callback
+from tuning.training_config import RANDOM_AGENT
 
 
 class Algo(Enum):
@@ -20,13 +21,25 @@ class Algo(Enum):
 
 
 ALGO_IMPLS = {
-    "PPO":    lambda env, seed, hyper_params={}: PPO("MlpPolicy", env, seed=seed, **hyper_params),
-    "A2C":    lambda env, seed, hyper_params={}: A2C("MlpPolicy", env, seed=seed, **hyper_params),
-    "DQN":    lambda env, seed, hyper_params={}: DQN("MlpPolicy", env, seed=seed, **hyper_params),
-    "SAC":    lambda env, seed, hyper_params={}: SAC("MlpPolicy", env, seed=seed, **hyper_params),
-    "DDPG":    lambda env, seed, hyper_params={}: DDPG("MlpPolicy", env, seed=seed, **hyper_params),
-    "TD3":    lambda env, seed, hyper_params={}: TD3("MlpPolicy", env, seed=seed, **hyper_params),
-    "RANDOM": lambda env, seed, hyper_params={}: RandomAgent(
+    "PPO": lambda env, seed, hyper_params={}: PPO(
+        "MlpPolicy", env, seed=seed, **hyper_params
+    ),
+    "A2C": lambda env, seed, hyper_params={}: A2C(
+        "MlpPolicy", env, seed=seed, **hyper_params
+    ),
+    "DQN": lambda env, seed, hyper_params={}: DQN(
+        "MlpPolicy", env, seed=seed, **hyper_params
+    ),
+    "SAC": lambda env, seed, hyper_params={}: SAC(
+        "MlpPolicy", env, seed=seed, **hyper_params
+    ),
+    "DDPG": lambda env, seed, hyper_params={}: DDPG(
+        "MlpPolicy", env, seed=seed, **hyper_params
+    ),
+    "TD3": lambda env, seed, hyper_params={}: TD3(
+        "MlpPolicy", env, seed=seed, **hyper_params
+    ),
+    RANDOM_AGENT: lambda env, seed, hyper_params={}: RandomAgent(
         action_space=env.action_space,
         seed=seed,
     ),
@@ -53,9 +66,14 @@ class BaseAgent(Protocol):
         self.agents = None
 
         builder = ALGO_IMPLS[algos[0]]
-        self.agents = builder(train_env, seed, asdict(hyper_params)) 
+        self.agents = builder(train_env, seed, asdict(hyper_params))
 
-    def learn(self, total_steps: int, eval_fn: Callable | None = None, eval_schedule_list: list[int]=None) -> None:
+    def learn(
+        self,
+        total_steps: int,
+        eval_fn: Callable | None = None,
+        eval_schedule_list: list[int] = None,
+    ) -> None:
         """
         Learn for a certain number of steps optionally doing eval.
 
@@ -68,7 +86,9 @@ class BaseAgent(Protocol):
                 self.agents.learn(eval_schedule_list=eval_schedule_list)
             else:
                 callback = SB3Callback(eval_model=eval_fn, total_timesteps=total_steps)
-                return self.agents.learn(total_steps, callback=callback, log_interval=None)
+                return self.agents.learn(
+                    total_steps, callback=callback, log_interval=None
+                )
 
     def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
         """
@@ -79,7 +99,7 @@ class BaseAgent(Protocol):
         :return: action to take
         """
         if self.agents is not None:
-            action, _ = self.agents.predict(obs, deterministic=True) 
+            action, _ = self.agents.predict(obs, deterministic=True)
         return action
 
     def save(self, algo_name: str, path: str) -> None:
@@ -89,10 +109,8 @@ class BaseAgent(Protocol):
         :algo_name: name of the algorithm
         :param path: path to save the agent's state to
         """
-        if hasattr(self.agents, "save"):
+        if hasattr(self.agents, "save"):  # should cover Random
             self.agents.save(path)
-        else:
-            raise TypeError(f"Agent {algo_name} hat keine save()-Methode")
 
     def load(self, algo_name: str, path: str, env, action_space=None) -> None:
         """
@@ -104,7 +122,7 @@ class BaseAgent(Protocol):
             # SB3-Loader
             AlgoClass = getattr(__import__("stable_baselines3"), algo_name)
             return AlgoClass.load(path + "_" + algo_name, env=env)
-        elif algo_name == "RANDOM":
+        elif algo_name == RANDOM_AGENT:
             return RandomAgent.load(path + "_" + algo_name, action_space)
         else:
             raise ValueError(f"Unbekannter Algorithmus: {algo_name}")
