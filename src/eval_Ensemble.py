@@ -8,19 +8,12 @@ import numpy as np
 import pandas as pd
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 
-from tuning.training_config import (
-    EVAL_DIR,
-    MEAN_FILE,
-    MODELS_DIR,
-    RANDOM_AGENT,
-    SEED_PREFIX,
-    SMA_MEAN_FILE,
-    SMA_STD_FILE,
-    STD_FILE,
-    TRAIN_DIR,
-    TRAINING_RESULTS_FILE,
-)
-from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger, save_rolling_avg
+from tuning.training_config import (EVAL_DIR, MEAN_FILE, MODELS_DIR,
+                                    RANDOM_AGENT, SEED_PREFIX, SMA_MEAN_FILE,
+                                    SMA_STD_FILE, STD_FILE, TRAIN_DIR,
+                                    TRAINING_RESULTS_FILE)
+from utils.logging import (EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger,
+                           save_rolling_avg)
 from utils.validate_algos import choose_effective_algos
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -53,7 +46,7 @@ def eval_policy(env_id, model, seeds, save_dir, episodes_per_seed=5):
 
     env = gym.make(env_id)
     for s in seeds:
-        file = f"{base_dir}/{SEED_PREFIX}{s}/{TRAINING_RESULTS_FILE}"
+        file = f"{base_dir}/{SEED_PREFIX}{s}.csv"
         with open(file, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([TRAINING_STEP_COL] + EVAL_COLS)
@@ -115,7 +108,7 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=list[str],
-        default=["PPO", "SAC", "DDPG_lr_187"],
+        default=["PPO", "SAC"],
         nargs="+",
     )
     parser.add_argument(
@@ -129,7 +122,7 @@ def main():
         "--seeds",
         help="Liste von Seeds, z. B.: --seeds 0 1 2",
         type=int,
-        default=[0, 2, 1],
+        default=[0, 2],
         nargs="+",
     )
 
@@ -185,9 +178,9 @@ def main():
     # Modelle laden
     for i, algo in enumerate(model_name):
         if effective_algos[i] == RANDOM_AGENT:
-            model_path = f"src/test/{args.env_id}/{TRAIN_DIR}/{algo}/{MODELS_DIR}/{SEED_PREFIX}{seeds[i]}"
+            model_path = f"results/test/{args.env_id}/{TRAIN_DIR}/{algo}/{MODELS_DIR}/{SEED_PREFIX}{seeds[i]}"
         else:
-            model_path = f"src/test/{args.env_id}/{TRAIN_DIR}/{algo}/{MODELS_DIR}/{SEED_PREFIX}{seeds[i]}.zip"
+            model_path = f"results/test/{args.env_id}/{TRAIN_DIR}/{algo}/{MODELS_DIR}/{SEED_PREFIX}{seeds[i]}.zip"
 
         if not os.path.isfile(model_path):
             sys.exit(f"Fehler: Datei '{model_path}' existiert nicht.")
@@ -201,7 +194,7 @@ def main():
     env.close()
 
     # save directory erstellen
-    save_dir = f"src/test/{args.env_id}/{EVAL_DIR}/{'_'.join(sorted(model_name))}/"
+    save_dir = f"results/test/{args.env_id}/{EVAL_DIR}/{'_'.join(sorted(model_name))}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
