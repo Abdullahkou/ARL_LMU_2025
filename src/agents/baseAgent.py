@@ -66,7 +66,7 @@ class BaseAgent(Protocol):
         self.agents = None
 
         builder = ALGO_IMPLS[algos[0]]
-        self.agents = builder(train_env, seed, asdict(hyper_params))
+        self.agents = builder(train_env, seed, hyper_params)
 
     def learn(
         self,

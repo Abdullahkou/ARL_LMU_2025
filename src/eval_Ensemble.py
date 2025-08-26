@@ -39,15 +39,15 @@ class HyperAgent:
             high = np.where(np.isfinite(self.aspace.high), self.aspace.high, np.inf)
             return np.clip(agg, low, high).astype(self.aspace.dtype), {}
 
-
 def eval_policy(env_id, hyperagents_list, seeds, save_dir):
+
     base_dir = f"{save_dir}/seeds"
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
 
     seeds_results: list[np.ndarray] = []
     env = gym.make(env_id)
-
+    
     for seed in seeds:
         seed_result: list[np.ndarray] = []
         for hyperagent in hyperagents_list:
@@ -82,7 +82,6 @@ def eval_policy(env_id, hyperagents_list, seeds, save_dir):
     std_df = pd.DataFrame(std, columns=EVAL_COLS, index=range(len(hyperagents_list)))
     std_df.index.name = TRAINING_STEP_COL
     std_df.to_csv(f"{save_dir}/{STD_FILE}", index=True)
-
 
     print("Saved as CSV")
 
@@ -213,7 +212,7 @@ def main():
             model_name_with_seed = f"{algo}_{SEED_PREFIX}{seed}"
             validate_models_list.append((model_name_with_seed, model))
 
-    
+   
     # save directory erstellen
     save_dir = f"results/test/{args.env_id}/{EVAL_DIR}/{'_'.join(sorted(model_name))}"
     if not os.path.exists(save_dir):
