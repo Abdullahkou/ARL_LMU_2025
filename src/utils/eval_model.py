@@ -7,6 +7,8 @@ from agents.baseAgent import BaseAgent
 from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 
+from agents.models import RandomAgent 
+
 
 def eval(
     current_step: int,
@@ -62,7 +64,7 @@ def eval(
     training_results.append(results)
     print(f"Evaluation {eval_ep} Finished")
 
-    if save_model:
+    if save_model and not isinstance(model.agents, RandomAgent):
         model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
         model.save(model.agents.__class__.__name__, model_path)
         print(f"Model saved at {model_path}")
