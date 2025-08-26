@@ -1,9 +1,17 @@
+algorithm: PPO
 eval_episodes: 20
 eval_phases: 20
 fixed_env_seeds:
 - 2
 - 3
-hyper_params: {}
+hyper_params:
+  learning_rate: 0.0003
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
 seeds:
 - 0
 - 1
