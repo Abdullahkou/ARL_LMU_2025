@@ -4,10 +4,10 @@ import os
 from gymnasium import Env
 
 from agents.baseAgent import BaseAgent
-from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
+from agents.models import RandomAgent
+from tuning.training_config import (CHECKPOINT_PREFIX,
+                                    INTERMEDIATE_RESULTS_PREFIX)
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
-
-from agents.models import RandomAgent 
 
 
 def eval(
@@ -42,15 +42,17 @@ def eval(
     ep_logger = EpisodeLogger(intermediate_results_file=intermediate_results_file)
 
     for _ in range(num_episodes):
-        state, _ = eval_env.reset()
+        # state, _ = eval_env.reset()
+        state = eval_env.reset()
 
         done = False
         while not done:
             action = model.predict(state)
-            state, reward, terminated, truncated, _ = eval_env.step(action)
-            done = terminated or truncated
+            # state, reward, terminated, truncated, _ = eval_env.step(action)
+            # done = terminated or truncated
+            state, reward, done, _ = eval_env.step(action)
 
-            ep_logger.log_step(reward)
+            ep_logger.log_step(reward[0])
 
         ep_logger.log_episode()
 

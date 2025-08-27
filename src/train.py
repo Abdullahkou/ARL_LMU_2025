@@ -7,21 +7,14 @@ from typing import Any, Optional
 import gymnasium as gym
 import numpy as np
 import pandas as pd
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import VecNormalize
 
 from agents.baseAgent import Algo, BaseAgent
-from tuning.training_config import (
-    MEAN_FILE,
-    MODELS_DIR,
-    SEED_PREFIX,
-    SEEDS_DIR,
-    SMA_MEAN_FILE,
-    SMA_STD_FILE,
-    STD_FILE,
-    TRAIN_DIR,
-    TRAINING_RESULTS_FILE,
-    load_training_config,
-    save_training_config,
-)
+from tuning.training_config import (MEAN_FILE, MODELS_DIR, SEED_PREFIX,
+                                    SEEDS_DIR, SMA_MEAN_FILE, SMA_STD_FILE,
+                                    STD_FILE, TRAIN_DIR, TRAINING_RESULTS_FILE,
+                                    load_training_config, save_training_config)
 from utils.eval_model import eval
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
 from utils.validate_algos import choose_effective_algos
@@ -74,10 +67,16 @@ def train(
             if training_config.use_fixed_env_seeds:
                 env_seeds = training_config.fixed_env_seeds
 
-            train_env = gym.make(env_id)
+            # train_env = gym.make(env_id)
+            train_env = make_vec_env(env_id, seed=env_seeds[0])
+            train_env = VecNormalize(train_env, norm_obs=True)
 
-            eval_env = gym.make(env_id)
-            eval_env.reset(seed=env_seeds[1])
+            # eval_env = gym.make(env_id)
+            eval_env = make_vec_env(env_id, seed=env_seeds[1])
+            eval_env = VecNormalize(eval_env, norm_obs=True)
+
+            # eval_env.reset(seed=env_seeds[1])
+            eval_env.reset()
 
             agent = BaseAgent(
                 algos=models,
@@ -169,7 +168,7 @@ def main():
         nargs="+",
     )
     parser.add_argument(
-        "--save_postfix", help="save_postfix", type=str, default="", nargs="?"
+        "--save_postfix", help="save_postfix", type=str, default="test_3", nargs="?"
     )
     parser.add_argument(
         "--env_id",

@@ -5,18 +5,21 @@ fixed_env_seeds:
 - 2
 - 3
 hyper_params:
-  learning_rate: 0.0003
-  n_steps: 2048
+  learning_rate: 0.0001
+  n_steps: 4096
   batch_size: 64
-  n_epochs: 10
-  gamma: 0.99
+  n_epochs: 20
+  gamma: 0.995
   gae_lambda: 0.95
   clip_range: 0.2
+  policy_kwargs: 
+    net_arch: [256,256]
+  ent_coef: 0.01
 seeds:
 - 0
 - 1
 - 2
 - 3
 - 4
-steps: 100000
+steps: 1000000
 use_fixed_env_seeds: true

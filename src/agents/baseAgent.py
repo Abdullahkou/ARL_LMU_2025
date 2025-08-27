@@ -61,7 +61,8 @@ class BaseAgent(Protocol):
         Base ctor.
         """
         # Train Umgebung seeden
-        train_env.reset(seed=seed)
+        # train_env.reset(seed=seed)
+        train_env.reset()
 
         self.agents = None
 
