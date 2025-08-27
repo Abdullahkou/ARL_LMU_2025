@@ -28,7 +28,7 @@ uv sync
     uv run src/train.py --algos <algorithm> --env_id <gym_env_id>
     ```
 
-4. View the results in the your specified results directory.
+4. View the results in your specified results directory.
 
 ## Slurm Usage
 
