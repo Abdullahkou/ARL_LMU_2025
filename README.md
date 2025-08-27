@@ -10,6 +10,54 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 - Automated training, validation, and testing pipelines
 - Configurable hyperparameter tuning
 
+## Ensemble Evaluation
+
+### Structure
+
+- **`eval_Ensemble.py`**  
+  Contains:
+  - the `Hyperagent` class, which manages multiple SB3 agents,  
+  - the `eval_policy` function, which evaluates a list of hyperagents in a given environment over different seeds.  
+  **Output:** For each ensemble, multiple CSV files with results for each seed as well as the mean across all seeds.  
+
+- **`evaluation_utils.py`**  
+  Helper functions:
+  - `evaluate_across_val_seeds` → evaluates models across validation seeds  
+  - `build_homogeneous` → selects the top-*k* seeds per algorithm  
+  - `build_heterogeneous` → selects the top-*k* models with different algorithms  
+
+
+### CLI Arguments (`eval_Ensemble.py`)
+
+- `--algos`  
+  One or more algorithms to be evaluated.  
+  - Example single: `--algos SAC`  
+  - Example multiple: `--algos SAC PPO TD3` 
+
+- `--env_id`  
+  the Gymnasium environment on which the algorithms were trained  
+
+- `--val_seeds`  
+  Number of seeds used for **validation** (model selection).  
+
+- `--eval_seeds`  
+  Number of seeds used for the **final evaluation** (ensemble performance).  
+
+- `--top_k_homogeneous`  
+  Number of top seeds per algorithm for building homogeneous ensembles.  
+
+
+### Usage
+ 
+```bash
+uv run src/eval_Ensemble.py \
+    --algos <ALGO_1> [<ALGO_2> ... <ALGO_N>] \
+    --env_id <GYM_ENVIRONMENT> \
+    --val_seeds <NUM_VALIDATION_SEEDS> \
+    --eval_seeds <NUM_EVALUATION_SEEDS> \
+    --top_k_homogeneous <K_VALUE>
+```
+
 ## Installation
 
 ```bash
@@ -28,7 +76,7 @@ uv sync
     uv run src/train.py --algos <algorithm> --env_id <gym_env_id>
     ```
 
-4. View the results in your specified results directory.
+4. View the results in the your specified results directory.
 
 ## Slurm Usage
 
