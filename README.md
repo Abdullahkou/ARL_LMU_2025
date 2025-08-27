@@ -12,8 +12,6 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 
 ## Ensemble Evaluation
 
----
-
 ### Structure
 
 - **`eval_Ensemble.py`**  
@@ -28,15 +26,16 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
   - `build_homogeneous` → selects the top-*k* seeds per algorithm  
   - `build_heterogeneous` → selects the top-*k* models with different algorithms  
 
----
 
 ### CLI Arguments (`eval_Ensemble.py`)
 
 - `--algos`  
-  List of algorithms to be evaluated.  
+  One or more algorithms to be evaluated.  
+  - Example single: `--algos SAC`  
+  - Example multiple: `--algos SAC PPO TD3` 
 
 - `--env_id`  
-  Gymnasium environment.  
+  the Gymnasium environment on which the algorithms were trained  
 
 - `--val_seeds`  
   Number of seeds used for **validation** (model selection).  
@@ -47,20 +46,17 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 - `--top_k_homogeneous`  
   Number of top seeds per algorithm for building homogeneous ensembles.  
 
----
 
 ### Usage
-
-#### Example 
+ 
 ```bash
 uv run src/eval_Ensemble.py \
-    --algos SAC PPO \
-    --env_id  MountainCarContinuous-v0\
-    --val_seeds 5 \
-    --eval_seeds 10 \
-    --top_k_homogeneous 3
+    --algos <ALGO_1> [<ALGO_2> ... <ALGO_N>] \
+    --env_id <GYM_ENVIRONMENT> \
+    --val_seeds <NUM_VALIDATION_SEEDS> \
+    --eval_seeds <NUM_EVALUATION_SEEDS> \
+    --top_k_homogeneous <K_VALUE>
 ```
-
 
 ## Installation
 
