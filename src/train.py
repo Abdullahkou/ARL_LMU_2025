@@ -39,6 +39,7 @@ def train(
     total_steps = training_config.steps
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
+    use_rendering = training_config.use_rendering
     ignore_hyper = training_config.ignore_hyper_params
 
 
@@ -82,7 +83,7 @@ def train(
 
             train_env = gym.make(env_id)
 
-            eval_env = gym.make(env_id, render_mode="rgb_array" if True else None)
+            eval_env = gym.make(env_id, render_mode="rgb_array" if use_rendering else None)
             eval_env.reset(seed=env_seeds[1])
             agent = BaseAgent(
                 algos=models,

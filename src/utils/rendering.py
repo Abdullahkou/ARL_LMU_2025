@@ -1,7 +1,6 @@
-from gymnasium import Env
 import pygame
 import numpy as np
-from types import MethodType
+from collections import deque
 
 SLOW_FPS = 9600
 FAST_FPS = 60
@@ -35,6 +34,10 @@ class Renderer:
 
         self._font = None
         self._hud_pad = 6
+
+        self.chart_enabled = True
+        self.chart_height = 120              # pixels
+        self._rewards = deque(maxlen=50_000) # keep plenty; we downsample to width
 
     def _get_font(self):
         if self._font is None:
@@ -78,16 +81,72 @@ class Renderer:
             y += s.get_height() + spacing
 
         self.screen.blit(bg, (8, 8))
+
+
+    def _draw_chart(self, x: int, y: int, w: int, h: int) -> None:
+        """Draw a simple live line chart of rewards into rect (x, y, w, h)."""
+        # Background
+        chart_rect = pygame.Rect(x, y, w, h)
+        pygame.draw.rect(self.screen, (16, 16, 16), chart_rect)
+
+        # If no data, draw an axis line and return
+        n = len(self._rewards)
+        if n == 0:
+            pygame.draw.line(self.screen, (64, 64, 64), (x, y + h - 1), (x + w, y + h - 1))
+            return
+
+        # Determine the slice to plot: last "w" points max (one per pixel)
+        if n <= w:
+            data = self._rewards
+        else:
+            data = list(self._rewards)[-w:]
+
+        # Compute y-scale
+        mn = min(data)
+        mx = max(data)
+        if mx == mn:
+            # avoid flat division: show mid baseline
+            mx = mn + 1.0
+
+        for frac in (0.0, 0.5, 1.0):
+            yy = int(y + (1.0 - frac) * (h - 1))
+            pygame.draw.line(self.screen, (40, 40, 40), (x, yy), (x + w, yy))
+
+        # Build polyline points
+        # Map i -> x+i, value -> y + scaled_y
+        scale = (h - 1) / (mx - mn)
+        pts = []
+        left = max(0, w - len(data))
+        for i, val in enumerate(data):
+            px = x + left + i
+            py = y + (h - 1) - int((val - mn) * scale)
+            pts.append((px, py))
+
+        if len(pts) >= 2:
+            pygame.draw.aalines(self.screen, (200, 220, 255), False, pts)
+
+        font = self._get_font()
+        fmt = "{:.15f}"
+        lo_surf = font.render(fmt.format(mn), True, (200, 200, 200))
+        hi_surf = font.render(fmt.format(mx), True, (200, 200, 200))
+        self.screen.blit(hi_surf, (x + 4, y + 2))
+        self.screen.blit(lo_surf, (x + 4, y + h - lo_surf.get_height() - 2))
+        title = font.render("Reward", True, (220, 220, 220))
+        self.screen.blit(title, (x + w - title.get_width() - 6, y + 2))
+    
+    def add_reward(self, r: float) -> None:
+        try:
+            self._rewards.append(float(r))
+        except Exception:
+            pass
     
     def pump_events(self):
-        """Returns ('esc'=True to stop rendering for this checkpoint,
-                    'space'=True to toggle fast mode)."""
         if not pygame.display.get_init() or not self._enabled: return None, None
         esc = False; 
         space = False
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
-                esc = True
+                esc = True # TODO: doesn't work yet
             if e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE: esc = True
                 elif e.key == pygame.K_SPACE: space = True
@@ -103,16 +162,32 @@ class Renderer:
         frame = self.env.render()
         if frame is None:
             return
+    
         arr = np.ascontiguousarray(frame.swapaxes(0, 1))
-        w, h = arr.shape[0], arr.shape[1]
+        w_env, h_env = arr.shape[0], arr.shape[1]
         
-        if pygame.display.get_surface() is None:
-            w, h = arr.shape[0], arr.shape[1]
-            self.screen = pygame.display.set_mode((w, h), self._flags)
-            self._size = (w, h)
+        extra_h = self.chart_height if self.chart_enabled else 0
+        total_w, total_h = w_env, h_env + extra_h
 
-        pygame.surfarray.blit_array(self.screen, arr)
+        if pygame.display.get_surface() is None:
+            self.screen = pygame.display.set_mode((w_env, h_env), self._flags)
+            self._size = (w_env, h_env)
+
+        if (
+            self.screen is None
+            or self._size != (total_w, total_h)
+            or pygame.display.get_surface() is None
+        ):
+            self.screen = pygame.display.set_mode((total_w, total_h), self._flags)
+            self._size = (total_w, total_h)
+
+        env_sub = self.screen.subsurface(pygame.Rect(0, 0, w_env, h_env))
+        arr = np.ascontiguousarray(frame.swapaxes(0, 1))
+        pygame.surfarray.blit_array(env_sub, arr)
+        
         self._draw_hud(episode=episode, eval_ep=eval_ep)
+        if self.chart_enabled and self.chart_height > 0:
+            self._draw_chart(0, h_env, w_env, self.chart_height)
         pygame.display.flip()
 
         self._clock.tick(self._tick)

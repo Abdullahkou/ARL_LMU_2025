@@ -55,6 +55,7 @@ def eval(
             done = terminated or truncated
             ep_logger.log_step(reward)
             if renderer is not None and renderer._enabled:
+                renderer.add_reward(reward)
                 esc, space = renderer.pump_events()
                 if esc:
                     renderer.close()

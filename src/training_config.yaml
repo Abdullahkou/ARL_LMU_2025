@@ -14,7 +14,4 @@ seeds:
 steps: 1000000
 use_fixed_env_seeds: true
 ignore_hyper_params: true
-<<<<<<< Updated upstream
-=======
-use_rendering: true
->>>>>>> Stashed changes
+use_rendering: false
