@@ -53,7 +53,7 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 
 ### Example 
 ```bash
-python eval_Ensemble.py \
+uv run src/eval_Ensemble.py \
     --algos SAC PPO \
     --env_id  MountainCarContinuous-v0\
     --val_seeds 5 \
