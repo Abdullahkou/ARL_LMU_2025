@@ -49,9 +49,9 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 
 ---
 
-#### Usage
+### Usage
 
-### Example 
+#### Example 
 ```bash
 uv run src/eval_Ensemble.py \
     --algos SAC PPO \
