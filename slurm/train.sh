@@ -7,4 +7,8 @@
 #SBATCH --get-user-env
 #SBATCH --export=ALL
 
+cd ..
+
+uv version
+
 uv run src/train.py --algos RANDOM --env_id MountainCarContinuous-v0
