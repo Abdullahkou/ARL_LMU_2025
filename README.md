@@ -10,6 +10,58 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 - Automated training, validation, and testing pipelines
 - Configurable hyperparameter tuning
 
+## Ensemble Evaluation
+
+---
+
+### Structure
+
+- **`eval_Ensemble.py`**  
+  Contains:
+  - the `Hyperagent` class, which manages multiple SB3 agents,  
+  - the `eval_policy` function, which evaluates a list of hyperagents in a given environment over different seeds.  
+  **Output:** For each ensemble, multiple CSV files with results for each seed as well as the mean across all seeds.  
+
+- **`evaluation_utils.py`**  
+  Helper functions:
+  - `evaluate_across_val_seeds` → evaluates models across validation seeds  
+  - `build_homogeneous` → selects the top-*k* seeds per algorithm  
+  - `build_heterogeneous` → selects the top-*k* models with different algorithms  
+
+---
+
+### CLI Arguments (`eval_Ensemble.py`)
+
+- `--algos`  
+  List of algorithms to be evaluated.  
+
+- `--env_id`  
+  Gymnasium environment.  
+
+- `--val_seeds`  
+  Number of seeds used for **validation** (model selection).  
+
+- `--eval_seeds`  
+  Number of seeds used for the **final evaluation** (ensemble performance).  
+
+- `--top_k_homogeneous`  
+  Number of top seeds per algorithm for building homogeneous ensembles.  
+
+---
+
+#### Usage
+
+### Example 
+```bash
+python eval_Ensemble.py \
+    --algos SAC PPO \
+    --env_id  MountainCarContinuous-v0\
+    --val_seeds 5 \
+    --eval_seeds 10 \
+    --top_k_homogeneous 3
+```
+
+
 ## Installation
 
 ```bash
