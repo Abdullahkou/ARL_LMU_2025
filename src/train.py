@@ -54,7 +54,8 @@ def train(
     print(
         f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | fixed env seeds: {training_config.use_fixed_env_seeds} | Hyperparams: {params}"
     )
-
+    training_config.algorithm = model_name
+    
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases
