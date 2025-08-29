@@ -2,14 +2,12 @@ import csv
 import os
 
 from gymnasium import Env
-import pygame
 
 from agents.baseAgent import BaseAgent
 from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 
 from agents.models import RandomAgent
-from utils.rendering import Renderer
 
 def eval(
     current_step: int,
@@ -47,7 +45,8 @@ def eval(
 
         done = False
 
-        renderer.env = eval_env
+        if renderer is not None:
+            renderer.env = eval_env
         
         while not done:
             action = model.predict(state)

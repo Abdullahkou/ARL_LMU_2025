@@ -83,7 +83,7 @@ def train(
 
             train_env = gym.make(env_id)
 
-            eval_env = gym.make(env_id, render_mode="rgb_array" if use_rendering else None)
+            eval_env = gym.make(env_id, render_mode="rgb_array")
             eval_env.reset(seed=env_seeds[1])
             agent = BaseAgent(
                 algos=models,
@@ -111,7 +111,7 @@ def train(
                 training_results=training_results,
                 num_episodes=num_episodes,
                 save_file=results_file,
-                renderer=Renderer()
+                renderer=Renderer() if use_rendering else None
                 # intermediate_results_dir =
             )
 
