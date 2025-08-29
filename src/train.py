@@ -75,11 +75,11 @@ def train(
 
             # train_env = gym.make(env_id)
             train_env = make_vec_env(env_id, seed=env_seeds[0])
-            train_env = VecNormalize(train_env, norm_obs=True)
+            train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 
             # eval_env = gym.make(env_id)
             eval_env = make_vec_env(env_id, seed=env_seeds[1])
-            eval_env = VecNormalize(eval_env, norm_obs=True)
+            eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=True)
 
             # eval_env.reset(seed=env_seeds[1])
             eval_env.reset()
@@ -174,7 +174,7 @@ def main():
         nargs="+",
     )
     parser.add_argument(
-        "--save_postfix", help="save_postfix", type=str, default="test_3", nargs="?"
+        "--save_postfix", help="save_postfix", type=str, default="test_6", nargs="?"
     )
     parser.add_argument(
         "--env_id",
