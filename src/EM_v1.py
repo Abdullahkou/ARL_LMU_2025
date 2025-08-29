@@ -150,8 +150,9 @@ if __name__ == "__main__":
 
 
     # env_id= "LunarLander-v3",
-    env_id= "BipedalWalker-v3"
+    #env_id= "BipedalWalker-v3"
     # env_id= "Humanoid-v5",
+    env_id= "MountainCarContinuous-v0"
 
     env_for_shape = gym.make(env_id)
     n_actions = env_for_shape.action_space.shape[-1]
@@ -159,12 +160,10 @@ if __name__ == "__main__":
 
     ensemble = EnsembleRL(
         env_id=env_id,
-        algos=["PPO", "SAC", "DDPG"],
-        total_timesteps=150000,
+        algos=["PPO"],
+        total_timesteps=2000000,
         algo_params={
-            "PPO": {"learning_rate": 0.0003},
-            "A2C": {"learning_rate": 0.0007},
-            "DDPG": {"learning_rate": 0.001, "buffer_size": 10000, "learning_starts": 2500, "action_noise": ddpg_action_noise}
+            "PPO": {"learning_rate": 0.0003}
         }
     )
 

@@ -74,6 +74,7 @@ class TrainingConfig:
     eval_episodes: int = 20
 
     hyper_params: Params = field(default_factory=Params)
+    ignore_hyper_params: bool = False
 
 
 def save_training_config(config: TrainingConfig, dir: str):

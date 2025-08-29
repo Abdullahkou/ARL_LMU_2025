@@ -1,4 +1,4 @@
-algorithm: PPO
+algorithm: ""
 eval_episodes: 20
 eval_phases: 20
 fixed_env_seeds:
@@ -23,3 +23,4 @@ seeds:
 - 4
 steps: 1000000
 use_fixed_env_seeds: true
+ignore_hyper_params: true

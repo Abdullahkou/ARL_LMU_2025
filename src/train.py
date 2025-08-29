@@ -28,21 +28,27 @@ def train(
     training_args: dict[str, Optional[Any]] = None,
 ):
     training_config = load_training_config(training_args=training_args)
-    ALOGORITHM = training_config.algorithm 
     seeds = training_config.seeds
     total_steps = training_config.steps
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
+    ignore_hyper = training_config.ignore_hyper_params
 
-    params = training_config.hyper_params
+
+    #print(ignore_hyper)
+
+    if not ignore_hyper:
+        params = training_config.hyper_params
+    else: 
+        params = {}
 
     model_name = f"{'_'.join([a for a in models])}"
 
-    print(ALOGORITHM)
     print(
         f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | fixed env seeds: {training_config.use_fixed_env_seeds} | Hyperparams: {params}"
     )
-
+    training_config.algorithm = model_name
+    
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases

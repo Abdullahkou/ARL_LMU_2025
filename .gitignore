@@ -1,4 +1,8 @@
 .vscode/
+*.out
+
+# saved models
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

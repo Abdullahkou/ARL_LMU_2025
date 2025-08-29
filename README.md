@@ -26,13 +26,12 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
   - `build_homogeneous` → selects the top-*k* seeds per algorithm  
   - `build_heterogeneous` → selects the top-*k* models with different algorithms  
 
-
 ### CLI Arguments (`eval_Ensemble.py`)
 
 - `--algos`  
   One or more algorithms to be evaluated.  
   - Example single: `--algos SAC`  
-  - Example multiple: `--algos SAC PPO TD3` 
+  - Example multiple: `--algos SAC PPO TD3`
 
 - `--env_id`  
   the Gymnasium environment on which the algorithms were trained  
@@ -46,9 +45,8 @@ ARL_LMU_2025 is an ensemble training project designed for machine learning resea
 - `--top_k_homogeneous`  
   Number of top seeds per algorithm for building homogeneous ensembles.  
 
-
 ### Usage
- 
+
 ```bash
 uv run src/eval_Ensemble.py \
     --algos <ALGO_1> [<ALGO_2> ... <ALGO_N>] \
@@ -142,3 +140,7 @@ uv sync
     cd slurm
     sbatch train.sh
     ```
+
+### Retrieving saved Checkpoints
+
+By default any saved model files ending in `.zip` will be not be tracked by git. To upload them to your local WINDOWS machine use the provided script [slurm/file_transfer.ps1](slurm/file_transfer.ps1). If asked for the ``src`` path, enter the absolute path to the directory or file you want to transfer. By default this will transfer into your current directory. Specify a different destination path via the `-dest` argument.
