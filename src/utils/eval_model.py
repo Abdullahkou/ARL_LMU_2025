@@ -35,6 +35,7 @@ def eval_checkpoint(
         intermediate_results_dir=intermediate_results_dir,
         renderer=renderer,
         eval_ep=eval_ep,
+        current_step=current_step,
     )
 
     training_results.append(results)

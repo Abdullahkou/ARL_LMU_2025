@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol
 
 import numpy as np
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
@@ -50,7 +50,7 @@ class AlgoConfig:
     """Configuration for a single algorithm."""
 
     name: Algo
-    hyper_params: dict = {}
+    hyper_params: dict = field(default_factory=lambda: {})
 
 
 class IEnsemble(Protocol):
@@ -58,7 +58,7 @@ class IEnsemble(Protocol):
 
     def __init__(
         self,
-        config: dict[str, any | AlgoConfig | int | str],
+        config: dict[str, Any | AlgoConfig | int | str],
     ) -> None:
         """Initialize the agent.
 
