@@ -172,7 +172,7 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["ppo"],
+        default=["sac"],
         nargs="+",
     )
     parser.add_argument(

@@ -21,7 +21,7 @@ class EnsembleRL:
         self.env_id = env_id
         self.algos = algos
         self.total_timesteps = total_timesteps
-        self.render_interval = render_interval  # Schritte zwischen den Live-Demos
+        self.render_interval = render_interval
         self.algo_params = algo_params if algo_params else {}
         
         self.envs = []
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     #
     ensemble = EnsembleRL(
         env_id="Humanoid-v5",
-        algos=["PPO"],
+        algos=["PPO", "DQN"],
         total_timesteps=500,
         render_interval=100,  
         algo_params={
