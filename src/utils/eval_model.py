@@ -3,28 +3,58 @@ import os
 
 from gymnasium import Env
 
-from agents.baseAgent import BaseAgent
+from agents.baseAgent import BaseAgent, IEnsemble
+from agents.models import RandomAgent
 from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
+from utils.rendering import Renderer
 
-from agents.models import RandomAgent
 
-def eval(
+def eval_checkpoint(
     current_step: int,
     training_results: list[tuple],
     results_dir: str,
-    model: BaseAgent,
+    model: BaseAgent | IEnsemble,
     eval_env: Env,
     steps_until_next_eval: int,
     num_episodes: int,
     save_file: str,
     intermediate_results_dir: str | None = None,
-    save_model: bool = True,
-    renderer=None,
+    save_model: bool = False,
+    renderer: Renderer | None = None,
 ):
     if current_step % steps_until_next_eval != 0:
         return
     eval_ep = current_step // steps_until_next_eval
+
+    results = eval(
+        model=model,
+        eval_env=eval_env,
+        num_episodes=num_episodes,
+        save_file=save_file,
+        intermediate_results_dir=intermediate_results_dir,
+        renderer=renderer,
+        eval_ep=eval_ep,
+    )
+
+    training_results.append(results)
+
+    if save_model and not isinstance(model.agents, RandomAgent):
+        model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
+        model.save(model.agents.__class__.__name__, model_path)
+        print(f"Model saved at {model_path}")
+
+
+def eval(
+    model: BaseAgent | IEnsemble,
+    eval_env: Env,
+    num_episodes: int,
+    save_file: str,
+    intermediate_results_dir: str | None,
+    renderer: Renderer | None,
+    eval_ep: int = 0,
+    current_step: int = 0,
+):
     print(f"Starting evaluation {eval_ep}")
 
     if eval_ep == 0:
@@ -47,7 +77,7 @@ def eval(
 
         if renderer is not None:
             renderer.env = eval_env
-        
+
         while not done:
             action = model.predict(state)
             state, reward, terminated, truncated, _ = eval_env.step(action)
@@ -62,7 +92,7 @@ def eval(
                     renderer.toggle_speed()
                 else:
                     renderer.render(episode=i, eval_ep=eval_ep)
-                
+
         ep_logger.log_episode()
 
     results = ep_logger.get_eps_mean()
@@ -72,10 +102,5 @@ def eval(
         writer = csv.writer(f)
         writer.writerow(row)
 
-    training_results.append(results)
     print(f"Evaluation {eval_ep} Finished")
-
-    if save_model and not isinstance(model.agents, RandomAgent):
-        model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
-        model.save(model.agents.__class__.__name__, model_path)
-        print(f"Model saved at {model_path}")
+    return results

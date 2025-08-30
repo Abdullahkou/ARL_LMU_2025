@@ -4,10 +4,6 @@ eval_phases: 20
 fixed_env_seeds:
     - 2
     - 3
-hyper_params:
-    learning_rate: 0.0001
-    gamma: 0.99
-
 seeds:
     - 0
 steps: 400000

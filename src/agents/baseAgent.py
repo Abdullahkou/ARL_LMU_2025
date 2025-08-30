@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Protocol
 
@@ -44,17 +45,31 @@ ALGO_IMPLS = {
 }
 
 
-class IAgent(Protocol):
+@dataclass
+class AlgoConfig:
+    """Configuration for a single algorithm."""
+
+    name: Algo
+    hyper_params: dict = {}
+
+
+class IEnsemble(Protocol):
     """Basic agent interface"""
 
     def __init__(
         self,
-        algos: list[Algo],
-        train_env_id: str,
-        hyper_params: dict = {},
-        seed: int = 69,
-        device: str = "cpu",
+        config: dict[str, any | AlgoConfig | int | str],
     ) -> None:
+        """Initialize the agent.
+
+        :param config: configuration dictionary: {...params}
+        """
+        # --------- config params ----------
+        # algos: list[AlgoConfig],
+        # train_env_id: str,
+        # training_results_dir: str | None = None,
+        # seed: int = 69,
+        # device: str = "cpu",
         pass
 
     def learn(

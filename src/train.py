@@ -22,7 +22,7 @@ from tuning.training_config import (
     load_training_config,
     save_training_config,
 )
-from utils.eval_model import eval
+from utils.eval_model import eval_checkpoint
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
 from utils.rendering import Renderer
 from utils.validate_algos import choose_effective_algos
@@ -36,13 +36,13 @@ def train(
     training_args: dict[
         str, Optional[Any]
     ] = None,  # This is always null as far as I can tell
+    use_rendering=False,
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
     total_steps = training_config.steps
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
-    use_rendering = training_config.use_rendering
     ignore_hyper = training_config.ignore_hyper_params
 
     # print(ignore_hyper)
@@ -105,7 +105,7 @@ def train(
             results_file = f"{results_dir}/{TRAINING_RESULTS_FILE}"
 
             training_fn = partial(
-                eval,
+                eval_checkpoint,
                 model=agent,
                 eval_env=eval_env,
                 steps_until_next_eval=eval_schedule,
@@ -114,6 +114,7 @@ def train(
                 num_episodes=num_episodes,
                 save_file=results_file,
                 renderer=Renderer() if use_rendering else None,
+                save_model=False,
                 # intermediate_results_dir =
             )
 

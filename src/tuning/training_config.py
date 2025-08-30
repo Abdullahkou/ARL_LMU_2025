@@ -1,6 +1,5 @@
 import json
 import os
-import traceback
 from dataclasses import asdict, dataclass, field, is_dataclass
 from enum import Enum
 from typing import Any, Optional
@@ -36,6 +35,7 @@ LR = "lr"
 
 USE_RENDERING = "use_rendering"
 
+
 def arg_true(arg: str):
     return arg == "true" or arg == "True" or arg == "1"
 
@@ -66,7 +66,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 class TrainingConfig:
     algorithm: str
     steps: int = 100_000
-    
+
     seeds: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])
     use_fixed_env_seeds: bool = True
     fixed_env_seeds: tuple[int, int] = (2, 3)
@@ -75,7 +75,6 @@ class TrainingConfig:
     eval_episodes: int = 20
 
     hyper_params: Params = field(default_factory=Params)
-    use_rendering: bool = False
     ignore_hyper_params: bool = False
 
 
@@ -91,12 +90,13 @@ def save_training_config(config: TrainingConfig, dir: str):
 
         yaml.safe_dump(dict, file, indent=4)
 
+
 def load_training_config(
     dir: str = "src", training_args: Optional[dict[str, Optional[Any]]] = None
 ):
     file_path = f"{dir}/training_config.yaml"
     train_config = None
-    
+
     if not os.path.exists(file_path):
         train_config = create_new_training_config(dir, training_args=training_args)
     else:
@@ -106,13 +106,14 @@ def load_training_config(
         if "hyper_params" not in config_data or config_data["hyper_params"] is None:
             config_data["hyper_params"] = {}
         train_config = TrainingConfig(**config_data)
-        
+
         train_config = __overide_config(train_config, training_args)
 
     json_format = json.dumps(train_config, cls=CustomJSONEncoder, indent=4)
     print(f"Train config:\n {json_format}\n")
 
     return train_config
+
 
 # def load_training_config(
 #     dir: str = "src", training_args: Optional[dict[str, Optional[Any]]] = None
