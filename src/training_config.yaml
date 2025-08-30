@@ -1,20 +1,20 @@
 algorithm: ""
 eval_episodes: 20
-eval_phases: 20
+eval_phases: 3
 fixed_env_seeds:
 - 2
 - 3
 hyper_params:
-  learning_rate: 0.0003
-  batch_size: 256
+  learning_rate: 0.0001
   gamma: 0.99
     
 seeds:
 - 0
 - 1
-- 2
-- 3
-- 4
-steps: 100000
+steps: 1000000
 use_fixed_env_seeds: true
 ignore_hyper_params: true
+<<<<<<< Updated upstream
+=======
+use_rendering: true
+>>>>>>> Stashed changes

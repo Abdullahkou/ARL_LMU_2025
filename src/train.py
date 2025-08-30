@@ -181,7 +181,7 @@ def main():
         "--env_id",
         help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'MountainCarContinuous-v0'",
         type=str,
-        default="MountainCarContinuous-v0",  # Standard-Umgebung
+        default="Pendulum-v1",  # Standard-Umgebung
     )
 
     args = parser.parse_args()

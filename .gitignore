@@ -1,5 +1,6 @@
 .vscode/
 *.out
+.DS_Store
 
 # saved models
 *.zip
