@@ -24,15 +24,18 @@ from tuning.training_config import (
 )
 from utils.eval_model import eval
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
-from utils.validate_algos import choose_effective_algos
 from utils.rendering import Renderer
+from utils.validate_algos import choose_effective_algos
+
 
 def train(
     models: list[str],
     model_dir: str,
     env_id: str,
     device="cpu",
-    training_args: dict[str, Optional[Any]] = None, # This is always null as far as I can tell
+    training_args: dict[
+        str, Optional[Any]
+    ] = None,  # This is always null as far as I can tell
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
@@ -42,12 +45,11 @@ def train(
     use_rendering = training_config.use_rendering
     ignore_hyper = training_config.ignore_hyper_params
 
-
-    #print(ignore_hyper)
+    # print(ignore_hyper)
 
     if not ignore_hyper:
         params = training_config.hyper_params
-    else: 
+    else:
         params = {}
 
     model_name = f"{'_'.join([a for a in models])}"
@@ -56,7 +58,7 @@ def train(
         f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | fixed env seeds: {training_config.use_fixed_env_seeds} | Hyperparams: {params}"
     )
     training_config.algorithm = model_name
-    
+
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases
@@ -111,7 +113,7 @@ def train(
                 training_results=training_results,
                 num_episodes=num_episodes,
                 save_file=results_file,
-                renderer=Renderer() if use_rendering else None
+                renderer=Renderer() if use_rendering else None,
                 # intermediate_results_dir =
             )
 
@@ -204,7 +206,7 @@ def main():
     # Validierung der Algorithmen
     model_name = args.algos[0].upper()
     valid_algos = []  # Currently, only one algo can be given but the validation assumes a list of algos with elaborate cases for single and multiple algos
-                      # Is this a preemptive optimization?
+    # Is this a preemptive optimization?
 
     if model_name not in Algo._member_names_:
         raise SystemExit(
