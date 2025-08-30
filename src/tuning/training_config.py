@@ -34,6 +34,7 @@ ENV_SEED = "env_seed"
 GAMMA = "gamma"
 LR = "lr"
 
+USE_RENDERING = "use_rendering"
 
 def arg_true(arg: str):
     return arg == "true" or arg == "True" or arg == "1"
@@ -74,6 +75,7 @@ class TrainingConfig:
     eval_episodes: int = 20
 
     hyper_params: Params = field(default_factory=Params)
+    use_rendering: bool = False
     ignore_hyper_params: bool = False
 
 
@@ -103,7 +105,6 @@ def load_training_config(
 
         if "hyper_params" not in config_data or config_data["hyper_params"] is None:
             config_data["hyper_params"] = {}
-
         train_config = TrainingConfig(**config_data)
         
         train_config = __overide_config(train_config, training_args)

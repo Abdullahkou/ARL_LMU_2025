@@ -7,8 +7,7 @@ from agents.baseAgent import BaseAgent
 from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 
-from agents.models import RandomAgent 
-
+from agents.models import RandomAgent
 
 def eval(
     current_step: int,
@@ -21,10 +20,10 @@ def eval(
     save_file: str,
     intermediate_results_dir: str | None = None,
     save_model: bool = True,
+    renderer=None,
 ):
     if current_step % steps_until_next_eval != 0:
         return
-
     eval_ep = current_step // steps_until_next_eval
     print(f"Starting evaluation {eval_ep}")
 
@@ -41,17 +40,29 @@ def eval(
 
     ep_logger = EpisodeLogger(intermediate_results_file=intermediate_results_file)
 
-    for _ in range(num_episodes):
+    for i in range(num_episodes):
         state, _ = eval_env.reset()
 
         done = False
+
+        if renderer is not None:
+            renderer.env = eval_env
+        
         while not done:
             action = model.predict(state)
             state, reward, terminated, truncated, _ = eval_env.step(action)
             done = terminated or truncated
-
             ep_logger.log_step(reward)
-
+            if renderer is not None and renderer._enabled:
+                renderer.add_reward(reward)
+                esc, space = renderer.pump_events()
+                if esc:
+                    renderer.close()
+                elif space:
+                    renderer.toggle_speed()
+                else:
+                    renderer.render(episode=i, eval_ep=eval_ep)
+                
         ep_logger.log_episode()
 
     results = ep_logger.get_eps_mean()

@@ -25,20 +25,21 @@ from tuning.training_config import (
 from utils.eval_model import eval
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
 from utils.validate_algos import choose_effective_algos
-
+from utils.rendering import Renderer
 
 def train(
     models: list[str],
     model_dir: str,
     env_id: str,
     device="cpu",
-    training_args: dict[str, Optional[Any]] = None,
+    training_args: dict[str, Optional[Any]] = None, # This is always null as far as I can tell
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
     total_steps = training_config.steps
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
+    use_rendering = training_config.use_rendering
     ignore_hyper = training_config.ignore_hyper_params
 
 
@@ -82,9 +83,8 @@ def train(
 
             train_env = gym.make(env_id)
 
-            eval_env = gym.make(env_id)
+            eval_env = gym.make(env_id, render_mode="rgb_array")
             eval_env.reset(seed=env_seeds[1])
-
             agent = BaseAgent(
                 algos=models,
                 train_env=train_env,
@@ -111,6 +111,7 @@ def train(
                 training_results=training_results,
                 num_episodes=num_episodes,
                 save_file=results_file,
+                renderer=Renderer() if use_rendering else None
                 # intermediate_results_dir =
             )
 
@@ -202,7 +203,8 @@ def main():
 
     # Validierung der Algorithmen
     model_name = args.algos[0].upper()
-    valid_algos = []
+    valid_algos = []  # Currently, only one algo can be given but the validation assumes a list of algos with elaborate cases for single and multiple algos
+                      # Is this a preemptive optimization?
 
     if model_name not in Algo._member_names_:
         raise SystemExit(
