@@ -14,3 +14,4 @@ seeds:
 steps: 400000
 use_fixed_env_seeds: true
 ignore_hyper_params: true
+use_rendering: false
