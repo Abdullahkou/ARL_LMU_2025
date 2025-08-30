@@ -2,7 +2,6 @@ from enum import Enum
 from typing import Callable, Protocol
 
 import numpy as np
-from gymnasium import Env
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 
 from agents.models import RandomAgent, SB3Callback
@@ -51,7 +50,7 @@ class IAgent(Protocol):
     def __init__(
         self,
         algos: list[Algo],
-        train_env: Callable[[], Env],
+        train_env_id: str,
         hyper_params: dict = {},
         seed: int = 69,
         device: str = "cpu",
