@@ -84,7 +84,7 @@ def plot_results(
 
 
 def main():
-    base_dir = f"results/test/MountainCarContinuous-v0/{TRAIN_DIR}"
+    base_dir = f"results/test/Pendulum-v1/{TRAIN_DIR}"
     save_dir = f"{base_dir}/_plots"
 
     agents = {
@@ -92,13 +92,17 @@ def main():
             f"{base_dir}/RANDOM/{SMA_MEAN_FILE}",
             f"{base_dir}/RANDOM/{SMA_STD_FILE}",
         ),
-        "A2C": (
-            f"{base_dir}/A2C/{SMA_MEAN_FILE}",
-            f"{base_dir}/A2C/{SMA_STD_FILE}",
+        "SAC": (
+            f"{base_dir}/SAC/{SMA_MEAN_FILE}",
+            f"{base_dir}/SAC/{SMA_STD_FILE}",
         ),
         "PPO": (
             f"{base_dir}/PPO/{SMA_MEAN_FILE}",
             f"{base_dir}/PPO/{SMA_STD_FILE}",
+        ),
+        "TD3": (
+            f"{base_dir}/TD3/{SMA_MEAN_FILE}",
+            f"{base_dir}/TD3/{SMA_STD_FILE}",
         ),
     }
 
