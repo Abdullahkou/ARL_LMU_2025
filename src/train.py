@@ -24,7 +24,6 @@ from tuning.training_config import (
 )
 from utils.eval_model import eval_checkpoint
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
-from utils.rendering import Renderer
 from utils.validate_algos import choose_effective_algos
 
 
@@ -113,7 +112,7 @@ def train(
                 training_results=training_results,
                 num_episodes=num_episodes,
                 save_file=results_file,
-                renderer=Renderer() if use_rendering else None,
+                renderer=use_rendering,
                 save_model=False,
                 # intermediate_results_dir =
             )

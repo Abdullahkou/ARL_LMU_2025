@@ -4,19 +4,21 @@
 ##############################################################################################################
 from __future__ import annotations
 
-import gymnasium
-import pygame
-import numpy as np
-from collections import deque
 import argparse
+from collections import deque
 from pathlib import Path
-from eval_Ensemble import ALGO_LOADERS
+
+import gymnasium
+import numpy as np
+import pygame
+
+from agents.ensembles import ALGO_LOADERS
 
 
 class Renderer:
     def __init__(
-            self,
-            env=None,
+        self,
+        env=None,
     ) -> None:
         self.env = env
         self._enabled = True
@@ -99,7 +101,9 @@ class Renderer:
         # If no data, draw an axis line and return
         n = len(self._rewards)
         if n == 0:
-            pygame.draw.line(self.screen, (64, 64, 64), (x, y + h - 1), (x + w, y + h - 1))
+            pygame.draw.line(
+                self.screen, (64, 64, 64), (x, y + h - 1), (x + w, y + h - 1)
+            )
             return
 
         # Determine the slice to plot: last "w" points max (one per pixel)
@@ -148,8 +152,9 @@ class Renderer:
             pass
 
     def pump_events(self):
-        if not pygame.display.get_init() or not self._enabled: return None, None
-        esc = False;
+        if not pygame.display.get_init() or not self._enabled:
+            return None, None
+        esc = False
         space = False
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
@@ -163,9 +168,11 @@ class Renderer:
 
     def render(self, episode=None, eval_ep=None) -> None:
         self._render_step += 1
-        if (not self._enabled or
-                not pygame.display.get_init() or
-                self._render_step % self._interval != 0):
+        if (
+            not self._enabled
+            or not pygame.display.get_init()
+            or self._render_step % self._interval != 0
+        ):
             return
 
         frame = self.env.render()
@@ -183,9 +190,9 @@ class Renderer:
             self._size = (w_env, h_env)
 
         if (
-                self.screen is None
-                or self._size != (total_w, total_h)
-                or pygame.display.get_surface() is None
+            self.screen is None
+            or self._size != (total_w, total_h)
+            or pygame.display.get_surface() is None
         ):
             self.screen = pygame.display.set_mode((total_w, total_h), self._flags)
             self._size = (total_w, total_h)
@@ -219,19 +226,17 @@ class Renderer:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Path to the model zip"
-    )
+    parser = argparse.ArgumentParser(description="Path to the model zip")
     parser.add_argument(
         "path",
         type=Path,
         help="Filesystem path (e.g., to a file or directory).",
     )
-    #parser.add_argument(
+    # parser.add_argument(
     #    "text",
     #    type=str,
     #    help="Arbitrary string."
-    #)
+    # )
     args = parser.parse_args()
 
     # Optional: require that the path already exists (comment out if not desired)
@@ -268,6 +273,7 @@ def main() -> None:
                 renderer.toggle_speed()
             else:
                 renderer.render()
+
 
 if __name__ == "__main__":
     main()

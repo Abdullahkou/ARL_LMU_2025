@@ -21,7 +21,7 @@ def eval_checkpoint(
     save_file: str,
     intermediate_results_dir: str | None = None,
     save_model: bool = False,
-    renderer: Renderer | None = None,
+    use_rendering=False,
 ):
     if current_step % steps_until_next_eval != 0:
         return
@@ -33,7 +33,7 @@ def eval_checkpoint(
         num_episodes=num_episodes,
         save_file=save_file,
         intermediate_results_dir=intermediate_results_dir,
-        renderer=renderer,
+        use_rendering=use_rendering,
         eval_ep=eval_ep,
         current_step=current_step,
     )
@@ -51,8 +51,8 @@ def eval(
     eval_env: Env,
     num_episodes: int,
     save_file: str,
-    intermediate_results_dir: str | None,
-    renderer: Renderer | None,
+    intermediate_results_dir: str | None = None,
+    use_rendering=False,
     eval_ep: int = 0,
     current_step: int = 0,
 ):
@@ -76,8 +76,9 @@ def eval(
 
         done = False
 
-        if renderer is not None:
-            renderer.env = eval_env
+        renderer = None
+        if use_rendering:
+            renderer = Renderer(env=eval_env)
 
         while not done:
             action = model.predict(state)
