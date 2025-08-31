@@ -156,7 +156,7 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["sac"],
+        default=["ppo"],
         nargs="+",
     )
     parser.add_argument(
@@ -164,7 +164,7 @@ def main():
     )
     parser.add_argument(
         "--env_id",
-        help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'MountainCarContinuous-v0'",
+        help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'Walker2d-v5'",
         type=str,
         default="Pendulum-v1",  # Standard-Umgebung
     )
