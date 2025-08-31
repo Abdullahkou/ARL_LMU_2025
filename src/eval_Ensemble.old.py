@@ -1,5 +1,4 @@
 import argparse
-import csv
 import os
 import sys
 from pathlib import Path
@@ -7,20 +6,28 @@ from pathlib import Path
 import gymnasium as gym
 import numpy as np
 import pandas as pd
-from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 
-from tuning.training_config import (EVAL_DIR, MEAN_FILE, MODELS_DIR,
-                                    RANDOM_AGENT, SEED_PREFIX, SMA_MEAN_FILE,
-                                    SMA_STD_FILE, STD_FILE, TRAIN_DIR,
-                                    TRAINING_RESULTS_FILE,
-                                    load_training_config)
-from utils.evaluation_utils import (build_heterogeneous, build_homogeneous,
-                                    evaluate_across_val_seeds)
+from agents.ensembles import ALGO_LOADERS
+from tuning.training_config import (
+    EVAL_DIR,
+    MEAN_FILE,
+    MODELS_DIR,
+    RANDOM_AGENT,
+    SEED_PREFIX,
+    STD_FILE,
+    TRAIN_DIR,
+    load_training_config,
+)
+from utils.evaluation_utils import (
+    build_heterogeneous,
+    build_homogeneous,
+    evaluate_across_val_seeds,
+)
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL
 from utils.validate_algos import choose_effective_algos
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from agents.baseAgent import Algo, RandomAgent
+from agents.baseAgent import Algo
 
 
 class HyperAgent:
@@ -39,19 +46,18 @@ class HyperAgent:
             high = np.where(np.isfinite(self.aspace.high), self.aspace.high, np.inf)
             return np.clip(agg, low, high).astype(self.aspace.dtype), {}
 
-def eval_policy(env_id, hyperagents_list, seeds, save_dir):
 
+def eval_policy(env_id, hyperagents_list, seeds, save_dir):
     base_dir = f"{save_dir}/seeds"
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
 
     seeds_results: list[np.ndarray] = []
     env = gym.make(env_id)
-    
+
     for seed in seeds:
         seed_result: list[np.ndarray] = []
         for hyperagent in hyperagents_list:
-
             # TODO: this would be currently overriding the existing seed results with intermediate ones??
             obs, _ = env.reset(seed=seed)
             done = truncated = False
@@ -65,7 +71,7 @@ def eval_policy(env_id, hyperagents_list, seeds, save_dir):
 
             seed_result.append((steps, rewards))
             env.close()
-        
+
         # Speicher seeds
         save_file_name = f"{base_dir}/{SEED_PREFIX}{seed}.csv"
         df = pd.DataFrame(seed_result, columns=[TRAINING_STEP_COL, "return"])
@@ -86,18 +92,6 @@ def eval_policy(env_id, hyperagents_list, seeds, save_dir):
     print("Saved as CSV")
 
 
-ALGO_LOADERS = {
-    "PPO": lambda path, env: PPO.load(path, env=env),
-    "A2C": lambda path, env: A2C.load(path, env=env),
-    "DQN": lambda path, env: DQN.load(path, env=env),
-    "SAC": lambda path, env: SAC.load(path, env=env),
-    "TD3": lambda path, env: TD3.load(path, env=env),
-    "DDPG": lambda path, env: DDPG.load(path, env=env),
-    RANDOM_AGENT: lambda path, env: RandomAgent.load(
-        path, action_space=env.action_space
-    ),
-}
-
 def main():
     # Create Arguments
     parser = argparse.ArgumentParser()
@@ -106,14 +100,14 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=list[str],
-        default=["SAC", "PPO"],
+        default=["SAC", "PPO", "TD3"],
         nargs="+",
     )
     parser.add_argument(
         "--env_id",
-        help="Name der Gymnasium-Umgebung, z. B. 'CartPole-v1' oder 'MountainCarContinuous-v0'",
+        help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'MountainCarContinuous-v0'",
         type=str,
-        default="MountainCarContinuous-v0",  # Standard-Umgebung
+        default="Pendulum-v1",  # Standard-Umgebung
     )
     parser.add_argument(
         "--val_seeds",
@@ -131,7 +125,7 @@ def main():
         "--top_k_homogeneous",
         help="Die am besten bewerteten k Seeds pro Modell",
         type=int,
-        default=2,
+        default=0,
     )
 
     args = parser.parse_args()
@@ -163,12 +157,12 @@ def main():
         valid_algos, args.env_id
     )  # wirft Fehler bei Inkompatibel
 
-    num_heterogen_models = len(set(effective_algos)) # Anzahl einzigartiger Modelle
+    num_heterogen_models = len(set(effective_algos))  # Anzahl einzigartiger Modelle
     top_k_homogeneous = args.top_k_homogeneous
     if num_heterogen_models > 1:
         if not top_k_homogeneous == num_heterogen_models:
             raise SystemExit(
-            f"top_k_homogeneous muss mit der Anzahl an einzigartigen Modellen übereinstimmen, damit es fair bleibt!\n"
+                "top_k_homogeneous muss mit der Anzahl an einzigartigen Modellen übereinstimmen, damit es fair bleibt!\n"
             )
 
     env = gym.make(args.env_id)
@@ -179,14 +173,23 @@ def main():
 
     # eval_seeds_list erstellen für die Validierung
     if not training_seeds:
-        raise SystemError("Training seeds konnten nicht geladen werden! Überprüfe, ob sie existieren!")
-    
+        raise SystemError(
+            "Training seeds konnten nicht geladen werden! Überprüfe, ob sie existieren!"
+        )
+
     if not (args.top_k_homogeneous <= len(training_seeds)):
-        raise SystemError(f"Top k seeds: {args.args.top_k_homogeneous} > Training_seeds: {training_seeds}!")
+        raise SystemError(
+            f"Top k seeds: {args.top_k_homogeneous} > Training_seeds: {training_seeds}!"
+        )
 
     training_fix_env_seeds = training_config.fixed_env_seeds
-    validate_seeds_list = list(range(training_fix_env_seeds[-1] + 1, training_fix_env_seeds[-1] + 1 + args.val_seeds))
-    
+    validate_seeds_list = list(
+        range(
+            training_fix_env_seeds[-1] + 1,
+            training_fix_env_seeds[-1] + 1 + args.val_seeds,
+        )
+    )
+
     model_name = args.algos
     validate_models_list = []
     # Modelle laden
@@ -206,23 +209,28 @@ def main():
             model_path = Path(model_path)
             if not model_path.exists():
                 sys.exit(f"Fehler: Datei '{model_path}' existiert nicht.")
-            
 
             model = ALGO_LOADERS[effective_algos[i]](model_path, env)
             model_name_with_seed = f"{algo}_{SEED_PREFIX}{seed}"
             validate_models_list.append((model_name_with_seed, model))
 
-   
     # save directory erstellen
     save_dir = f"results/test/{args.env_id}/{EVAL_DIR}/{'_'.join(sorted(model_name))}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
     # Bewertung der Modelle
-    valid_df = evaluate_across_val_seeds(validate_models_list=validate_models_list, validate_seeds_list=validate_seeds_list, env_id=args.env_id, save_dir = save_dir)
+    valid_df = evaluate_across_val_seeds(
+        validate_models_list=validate_models_list,
+        validate_seeds_list=validate_seeds_list,
+        env_id=args.env_id,
+        save_dir=save_dir,
+    )
 
     # top k homogene Modelle und die besten k heterogenen Modelle auswählen (falls unterschiedliche Modelle vorhanden)
-    homogeneous_list = build_homogeneous(valid_df=valid_df, top_k=args.top_k_homogeneous)
+    homogeneous_list = build_homogeneous(
+        valid_df=valid_df, top_k=args.top_k_homogeneous
+    )
     print("homogeneous_ensembles: ", homogeneous_list)
 
     heterogeneous_list = []
@@ -231,7 +239,11 @@ def main():
         print("heterogeneous ensembles: ", heterogeneous_list)
     print("\n")
 
-    loop_ensemble_list = homogeneous_list + [heterogeneous_list] if heterogeneous_list else homogeneous_list
+    loop_ensemble_list = (
+        homogeneous_list + [heterogeneous_list]
+        if heterogeneous_list
+        else homogeneous_list
+    )
 
     training_eval_phases = training_config.eval_phases + 1
     for ensemble in loop_ensemble_list:
@@ -260,7 +272,7 @@ def main():
 
             Ensemble = HyperAgent(
                 ensemble_list, ensemble_list[0].get_env().action_space
-            )  
+            )
             env.close()
 
             # füge Ensemble in die Liste ein
@@ -279,7 +291,12 @@ def main():
             for algo, seed in zip(model_name_list, model_seeds):
                 f.write(f"{algo}: {seed}\n")
 
-        eval_seeds_list = list(range(validate_seeds_list[-1] + 1, validate_seeds_list[-1] + 1 + args.eval_seeds))
+        eval_seeds_list = list(
+            range(
+                validate_seeds_list[-1] + 1,
+                validate_seeds_list[-1] + 1 + args.eval_seeds,
+            )
+        )
 
         print(
             f"Model: {unique_model_name_list} | Env: {args.env_id} | seed: {model_seeds}  | eval_seeds: {eval_seeds_list}"
@@ -291,6 +308,7 @@ def main():
             seeds=eval_seeds_list,
             save_dir=save_dir,
         )
+
 
 if __name__ == "__main__":
     main()
