@@ -112,7 +112,7 @@ def train(
                 training_results=training_results,
                 num_episodes=num_episodes,
                 save_file=results_file,
-                renderer=use_rendering,
+                use_rendering=use_rendering,
                 save_model=False,
                 # intermediate_results_dir =
             )
