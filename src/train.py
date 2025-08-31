@@ -6,24 +6,19 @@ from typing import Any, Optional
 
 import gymnasium as gym
 import numpy as np
-import pandas as pd
 
 from agents.baseAgent import Algo, BaseAgent
 from tuning.training_config import (
-    MEAN_FILE,
     MODELS_DIR,
     SEED_PREFIX,
     SEEDS_DIR,
-    SMA_MEAN_FILE,
-    SMA_STD_FILE,
-    STD_FILE,
     TRAIN_DIR,
     TRAINING_RESULTS_FILE,
     load_training_config,
     save_training_config,
 )
 from utils.eval_model import eval_checkpoint
-from utils.logging import EVAL_COLS, TRAINING_STEP_COL, save_rolling_avg
+from utils.logging import save_seed_totals
 from utils.validate_algos import choose_effective_algos
 
 
@@ -65,7 +60,6 @@ def train(
         eval_schedule * i for i in range(eval_phases + 1)
     ]  # für RandomAgent
 
-    result_cols = EVAL_COLS
     interval_steps = [
         i * eval_schedule for i in range(0, eval_phases + 1)
     ]  # the first training step is always evaluated/included    seeds_results: list[np.ndarray] = []
@@ -140,22 +134,10 @@ def train(
             eval_env.close()
             eval_env = None
 
-        mean = np.nanmean(seeds_results, axis=0)
-        mean_df = pd.DataFrame(mean, columns=result_cols, index=interval_steps)
-        mean_df.index.name = TRAINING_STEP_COL
-        mean_df.to_csv(f"{model_dir}/{MEAN_FILE}", index=True)
-
-        save_rolling_avg(
-            mean_df, f"{model_dir}/{SMA_MEAN_FILE}", window_size=3, min_periods=1
-        )
-
-        std = np.nanstd(seeds_results, axis=0)
-        std_df = pd.DataFrame(std, columns=result_cols, index=interval_steps)
-        std_df.index.name = TRAINING_STEP_COL
-        std_df.to_csv(f"{model_dir}/{STD_FILE}", index=True)
-
-        save_rolling_avg(
-            std_df, f"{model_dir}/{SMA_STD_FILE}", window_size=3, min_periods=1
+        save_seed_totals(
+            seeds_results=seeds_results,
+            model_dir=model_dir,
+            interval_steps=interval_steps,
         )
 
     except (Exception, KeyboardInterrupt):
