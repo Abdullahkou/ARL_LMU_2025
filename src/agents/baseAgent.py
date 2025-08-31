@@ -114,25 +114,6 @@ class IEnsemble(Protocol):
         pass
 
 
-class EvalEnsemble(IEnsemble):
-    def __init__(
-        self,
-        config: dict[str, Any | AlgoConfig | int | str],
-    ):
-        #super.__init__()
-        pass
-
-    def save(self, base_dir: str) -> None:
-        raise NotImplementedError("Eval ensemble does not save models")
-
-    def load(self, base_dir: str) -> None:
-        pass
-
-    def learn(self, base_dir: str) -> None:
-        raise NotImplementedError("Eval ensemble does not learn")
-
-
-
 class BaseAgent(Protocol):
     """Basic agent interface"""
 
