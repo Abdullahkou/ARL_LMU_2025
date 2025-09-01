@@ -51,7 +51,9 @@ def main():
         ("TD3", f"{base_dir}/TD3/{MODELS_DIR}"),
     ]
 
-    save_location = "results/test/Walker2d-v5/eval"
+    model_name = "_".join([algo[0] for algo in algos])
+
+    save_location = f"results/test/Walker2d-v5/eval/{model_name}"
 
     evaluate_ensemble(
         base_dir=base_dir,
