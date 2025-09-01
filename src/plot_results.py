@@ -84,7 +84,7 @@ def plot_results(
 
 
 def main():
-    base_dir = f"results/test/Walker2d-v5/{TRAIN_DIR}"
+    base_dir = f"results/test/Walker2d-v5/1M/{TRAIN_DIR}"
     save_dir = f"{base_dir}/_plots"
 
     agents = {

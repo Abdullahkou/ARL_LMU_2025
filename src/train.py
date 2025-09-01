@@ -18,21 +18,22 @@ from tuning.training_config import (
     save_training_config,
 )
 from utils.eval_model import eval_checkpoint
-from utils.logging import save_seed_totals
+from utils.logging import parse_steps, save_seed_totals
 from utils.validate_algos import choose_effective_algos
 
 
 def train(
     models: list[str],
-    model_dir: str,
+    base_dir: str,
     env_id: str,
-    device="cpu",
+    save_postfix: str = "",
     training_args: dict[
         str, Optional[Any]
-    ] = None,  # This is always null as far as I can tell
+    ] = None,  # To override any args into the train_config
     use_rendering=False,
     save_checkpoints=False,
     save_intermediate_results=False,
+    device="cpu",
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
@@ -40,8 +41,6 @@ def train(
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
     ignore_hyper = training_config.ignore_hyper_params
-
-    # print(ignore_hyper)
 
     if not ignore_hyper:
         params = training_config.hyper_params
@@ -55,6 +54,8 @@ def train(
     )
     training_config.algorithm = model_name
 
+    steps_dir = parse_steps(total_steps=total_steps)
+    model_dir = f"{base_dir}/{env_id}/{steps_dir}/{TRAIN_DIR}/{models[0]}{save_postfix}"
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases
@@ -110,7 +111,9 @@ def train(
                 save_file=results_file,
                 use_rendering=use_rendering,
                 save_model=save_checkpoints,
-                # intermediate_results_dir =
+                intermediate_results_dir=results_dir
+                if save_intermediate_results
+                else None,
             )
 
             agent.learn(
@@ -158,7 +161,7 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["ppo"],
+        default=["random"],
         nargs="+",
     )
     parser.add_argument(
@@ -168,7 +171,7 @@ def main():
         "--env_id",
         help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'Walker2d-v5'",
         type=str,
-        default="Pendulum-v1",  # Standard-Umgebung
+        default="Walker2d-v5",  # Standard-Umgebung
     )
 
     args = parser.parse_args()
@@ -210,15 +213,16 @@ def main():
     )  # wirft Fehler bei Single+inkompatibel
 
     base_dir = "results/test"
-    model_dir = (
-        f"{base_dir}/{args.env_id}/{TRAIN_DIR}/{effective_algos[0]}{save_postfix}"
-    )
 
     # automatically loads training_config from main directory!, creates if not exists
     train(
         models=effective_algos,
-        model_dir=model_dir,
+        base_dir=base_dir,
         env_id=env_id,
+        save_postfix=save_postfix,
+        use_rendering=False,
+        save_checkpoints=True,
+        save_intermediate_results=False,
         device=device,
     )
 

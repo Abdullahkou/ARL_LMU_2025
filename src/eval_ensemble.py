@@ -42,7 +42,7 @@ def evaluate_ensemble(
 
 
 def main():
-    base_dir = "results/test/Walker2d-v5/train"
+    base_dir = "results/test/Walker2d-v5/1M/train"
 
     env_id = "Walker2d-v5"
     algos = [
@@ -53,7 +53,7 @@ def main():
 
     model_name = "_".join([algo[0] for algo in algos])
 
-    save_location = f"results/test/Walker2d-v5/eval/{model_name}"
+    save_location = f"results/test/Walker2d-v5/1M/eval/{model_name}"
 
     evaluate_ensemble(
         base_dir=base_dir,

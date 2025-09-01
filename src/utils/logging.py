@@ -88,6 +88,16 @@ def save_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1
     rolling_avg.to_csv(file_name)
 
 
+def parse_steps(total_steps: int):
+    """Parse steps int into something like 1M or 1.5M or 0.5M..."""
+    if total_steps < 1_000:
+        return str(total_steps)
+    elif total_steps < 1_000_000:
+        return f"{total_steps / 1_000:.1f}K"
+    else:
+        return f"{total_steps / 1_000_000:.1f}M"
+
+
 def save_mean(arr: np.ndarray | list | deque):
     """-- Credit to sb3 --
     Compute the mean of an array if there is at least one element.

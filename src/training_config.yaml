@@ -12,6 +12,6 @@ seeds:
     - 0
     - 1
     - 2
-steps: 1000000
+steps: 1500000
 use_fixed_env_seeds: true
 ignore_hyper_params: true
