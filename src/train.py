@@ -31,6 +31,8 @@ def train(
         str, Optional[Any]
     ] = None,  # This is always null as far as I can tell
     use_rendering=False,
+    save_checkpoints=False,
+    save_intermediate_results=False,
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
@@ -107,7 +109,7 @@ def train(
                 num_episodes=num_episodes,
                 save_file=results_file,
                 use_rendering=use_rendering,
-                save_model=False,
+                save_model=save_checkpoints,
                 # intermediate_results_dir =
             )
 
