@@ -57,7 +57,10 @@ class EvalEnsemble(IEnsemble):
         # TODO: ensemble strategy (best seed?)
         for algo_name, algo_path in self.algos:
             file = f"{algo_path}/{SEED_PREFIX}0.zip"
-            algo = ALGO_LOADERS[algo_name](file, env=self.env)
+            algo: PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent = ALGO_LOADERS[
+                algo_name
+            ](file, env=self.env)
+            algo.seed = self.seed
             self.ensemble.append(algo)
 
     def predict(self, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
