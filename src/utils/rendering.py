@@ -1,21 +1,23 @@
-import pygame
-import numpy as np
 from collections import deque
+
+import numpy as np
+import pygame
 
 SLOW_FPS = 9600
 FAST_FPS = 60
 
+
 class Renderer:
     def __init__(
-            self,
-            env = None,
+        self,
+        env=None,
     ) -> None:
         self.env = env
         self._enabled = True
         self._flags = pygame.DOUBLEBUF
-        if not pygame.get_init(): 
+        if not pygame.get_init():
             pygame.init()
-        if not pygame.display.get_init(): 
+        if not pygame.display.get_init():
             pygame.display.init()
         self.screen = None
         self._size = (8, 8)
@@ -24,11 +26,11 @@ class Renderer:
         except Exception:
             pass
 
-        self.fast = False                  # False = normal/slow, True = fast
-        self.render_interval_slow = 1      # draw every step
-        self.render_interval_fast = 16     # draw every 16th step
-        self.fps_slow = 60                 # throttle UI in slow mode for smoothness
-        self.fps_fast = 0                  # 0 or None => no throttling in fast mode
+        self.fast = False  # False = normal/slow, True = fast
+        self.render_interval_slow = 1  # draw every step
+        self.render_interval_fast = 16  # draw every 16th step
+        self.fps_slow = 60  # throttle UI in slow mode for smoothness
+        self.fps_fast = 0  # 0 or None => no throttling in fast mode
         self._render_step = 0
         self._clock = pygame.time.Clock()
 
@@ -36,8 +38,8 @@ class Renderer:
         self._hud_pad = 6
 
         self.chart_enabled = True
-        self.chart_height = 120              # pixels
-        self._rewards = deque(maxlen=50_000) # keep plenty; we downsample to width
+        self.chart_height = 120  # pixels
+        self._rewards = deque(maxlen=50_000)  # keep plenty; we downsample to width
 
     def _get_font(self):
         if self._font is None:
@@ -53,15 +55,15 @@ class Renderer:
     @property
     def _interval(self):
         return self.render_interval_fast if self.fast else self.render_interval_slow
-    
+
     @property
     def _tick(self):
         return self.fps_fast if self.fast else self.fps_slow
-    
+
     def _draw_hud(self, episode=None, eval_ep=None):
         mode = "FAST" if self.fast else "SLOW"
         lines = [f"{mode}  (SPACE to toggle)"]
-        if episode is not None:               
+        if episode is not None:
             lines.append(f"Episode {episode}")
         if eval_ep is not None:
             lines.append(f"Checkpoint {eval_ep}")
@@ -71,7 +73,7 @@ class Renderer:
         texts = [font.render(t, True, (255, 255, 255)) for t in lines]
         spacing = 2
         w = max(s.get_width() for s in texts) + 2 * pad
-        h = sum(s.get_height() for s in texts) + (len(texts)-1)*spacing + 2*pad
+        h = sum(s.get_height() for s in texts) + (len(texts) - 1) * spacing + 2 * pad
 
         bg = pygame.Surface((w, h), pygame.SRCALPHA)
         bg.fill((0, 0, 0, 160))
@@ -82,7 +84,6 @@ class Renderer:
 
         self.screen.blit(bg, (8, 8))
 
-
     def _draw_chart(self, x: int, y: int, w: int, h: int) -> None:
         """Draw a simple live line chart of rewards into rect (x, y, w, h)."""
         # Background
@@ -92,7 +93,9 @@ class Renderer:
         # If no data, draw an axis line and return
         n = len(self._rewards)
         if n == 0:
-            pygame.draw.line(self.screen, (64, 64, 64), (x, y + h - 1), (x + w, y + h - 1))
+            pygame.draw.line(
+                self.screen, (64, 64, 64), (x, y + h - 1), (x + w, y + h - 1)
+            )
             return
 
         # Determine the slice to plot: last "w" points max (one per pixel)
@@ -133,39 +136,44 @@ class Renderer:
         self.screen.blit(lo_surf, (x + 4, y + h - lo_surf.get_height() - 2))
         title = font.render("Reward", True, (220, 220, 220))
         self.screen.blit(title, (x + w - title.get_width() - 6, y + 2))
-    
+
     def add_reward(self, r: float) -> None:
         try:
             self._rewards.append(float(r))
         except Exception:
             pass
-    
+
     def pump_events(self):
-        if not pygame.display.get_init() or not self._enabled: return None, None
-        esc = False; 
+        if not pygame.display.get_init() or not self._enabled:
+            return None, None
+        esc = False
         space = False
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
-                esc = True # TODO: doesn't work yet
+                esc = True  # TODO: doesn't work yet
             if e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_ESCAPE: esc = True
-                elif e.key == pygame.K_SPACE: space = True
+                if e.key == pygame.K_ESCAPE:
+                    esc = True
+                elif e.key == pygame.K_SPACE:
+                    space = True
         return esc, space
-    
+
     def render(self, episode=None, eval_ep=None) -> None:
         self._render_step += 1
-        if (not self._enabled or 
-            not pygame.display.get_init() or
-            self._render_step % self._interval != 0):
+        if (
+            not self._enabled
+            or not pygame.display.get_init()
+            or self._render_step % self._interval != 0
+        ):
             return
-        
+
         frame = self.env.render()
         if frame is None:
             return
-    
+
         arr = np.ascontiguousarray(frame.swapaxes(0, 1))
         w_env, h_env = arr.shape[0], arr.shape[1]
-        
+
         extra_h = self.chart_height if self.chart_enabled else 0
         total_w, total_h = w_env, h_env + extra_h
 
@@ -184,7 +192,7 @@ class Renderer:
         env_sub = self.screen.subsurface(pygame.Rect(0, 0, w_env, h_env))
         arr = np.ascontiguousarray(frame.swapaxes(0, 1))
         pygame.surfarray.blit_array(env_sub, arr)
-        
+
         self._draw_hud(episode=episode, eval_ep=eval_ep)
         if self.chart_enabled and self.chart_height > 0:
             self._draw_chart(0, h_env, w_env, self.chart_height)
@@ -196,7 +204,7 @@ class Renderer:
         # TODO: This doesn't work. It crashes the pygame window
         self._enabled = False
         self.screen = None
-        self._size = (0,0)
+        self._size = (0, 0)
         if pygame.display.get_init():
             pygame.display.quit()
         try:

@@ -71,20 +71,20 @@ def eval(
 
     ep_logger = EpisodeLogger(intermediate_results_file=intermediate_results_file)
 
+    renderer = None
+    if use_rendering:
+        renderer = Renderer(env=eval_env)
+
     for i in range(num_episodes):
         state, _ = eval_env.reset()
 
         done = False
-
-        renderer = None
-        if use_rendering:
-            renderer = Renderer(env=eval_env)
-
         while not done:
             action = model.predict(state)
             state, reward, terminated, truncated, _ = eval_env.step(action)
             done = terminated or truncated
             ep_logger.log_step(reward)
+
             if renderer is not None and renderer._enabled:
                 renderer.add_reward(reward)
                 esc, space = renderer.pump_events()

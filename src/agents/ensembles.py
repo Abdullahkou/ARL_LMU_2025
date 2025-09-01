@@ -1,5 +1,6 @@
 from typing import Any, Callable
 
+import gymnasium
 import numpy as np
 from scipy.stats import mode
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
@@ -28,13 +29,22 @@ class EvalEnsemble(IEnsemble):
     ) -> None:
         """Initialize the ensemble agent.
 
-        :param config: configuration dictionary containing algos, train_env_id, etc.
+        :param config: configuration dictionary containing:
+        {
+            algos: [("algoname", "path/to/model"),...],
+            env: gymnasium.Env,
+            device: "cpu",
+            seed: 42,
+            is_discrete: False
+        }
         """
-        self.config = config
         self.algos: list[tuple[str, str]] = config.get("algos", [])
+        # TODO: fix this
         self.device = config.get("device", "cpu")
         self.seed = config.get("seed", 69)
         self.is_discrete = config.get("is_discrete", False)
+        self.env = config.get("env", gymnasium.make("CartPole-v1"))
+
         self.ensemble: list[PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent] = []
         self.load()
 
@@ -43,10 +53,11 @@ class EvalEnsemble(IEnsemble):
         Load the state of each algorithm in the ensemble from the specified directory.
 
         """
+
         # TODO: ensemble strategy (best seed?)
         for algo_name, algo_path in self.algos:
             file = f"{algo_path}/{SEED_PREFIX}0.zip"
-            algo = ALGO_LOADERS[algo_name](file, env=None)
+            algo = ALGO_LOADERS[algo_name](file, env=self.env)
             self.ensemble.append(algo)
 
     def predict(self, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
