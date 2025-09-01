@@ -16,9 +16,7 @@ ALGO_LOADERS = {
     "SAC": lambda path, env: SAC.load(path, env=env),
     "TD3": lambda path, env: TD3.load(path, env=env),
     "DDPG": lambda path, env: DDPG.load(path, env=env),
-    RANDOM_AGENT: lambda path, env: RandomAgent.load(
-        path, action_space=env.action_space
-    ),
+    RANDOM_AGENT: lambda _, env: RandomAgent(action_space=env.action_space),
 }
 
 
