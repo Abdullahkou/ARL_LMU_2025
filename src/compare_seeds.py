@@ -23,7 +23,7 @@ def plot_seeds(model_dir: str, save_dir: str):
 
 
 def main():
-    model_dir = "results/test/Pendulum-v1/train/SAC"
+    model_dir = "results/test/Walker2d-v5/train/TD3"
     save_dir = f"{model_dir}/seed_plots"
 
     plot_seeds(model_dir, save_dir)

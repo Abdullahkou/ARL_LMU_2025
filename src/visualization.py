@@ -5,19 +5,21 @@ from tuning.training_config import MODELS_DIR, load_training_config
 from utils.rendering import Renderer
 
 
-def render_eval(base_dir: str, env_id: str, algos: list[tuple[str, str]]):
+def render_eval(
+    base_dir: str, env_id: str, algos: list[tuple[str, str]], num_episodes: int = 10
+):
     config_dir = f"{base_dir}/{algos[0][0]}"
     config = load_training_config(dir=config_dir)
     eval_env_seed = config.fixed_env_seeds[1]
 
     render_env = gymnasium.make(env_id, render_mode="rgb_array")
+    render_env.reset(seed=eval_env_seed)
     renderer = Renderer(env=render_env)
 
     model = EvalEnsemble({"algos": algos, "env": render_env})
 
-    num_episodes = 10
     for i in range(num_episodes):
-        state, _ = render_env.reset(seed=eval_env_seed)
+        state, _ = render_env.reset()
 
         done = False
         while not done:
@@ -46,7 +48,7 @@ def main():
         ("TD3", f"{base_dir}/TD3/{MODELS_DIR}"),
     ]
 
-    render_eval(base_dir=base_dir, env_id=env_id, algos=algos)
+    render_eval(base_dir=base_dir, env_id=env_id, algos=algos, num_episodes=20)
 
 
 if __name__ == "__main__":
