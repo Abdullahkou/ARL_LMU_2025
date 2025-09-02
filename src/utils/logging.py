@@ -62,25 +62,30 @@ class EpisodeLogger:
 
 
 def save_seed_totals(
-    seeds_results: list[np.ndarray], model_dir: str, interval_steps: list[int]
+    seeds_results: list[np.ndarray],
+    model_dir: str,
+    interval_steps: list[int],
+    save_rolling=True,
 ):
     mean = np.nanmean(seeds_results, axis=0)
     mean_df = pd.DataFrame(mean, columns=EVAL_COLS, index=interval_steps)
     mean_df.index.name = TRAINING_STEP_COL
     mean_df.to_csv(f"{model_dir}/{MEAN_FILE}", index=True)
 
-    save_rolling_avg(
-        mean_df, f"{model_dir}/{SMA_MEAN_FILE}", window_size=3, min_periods=1
-    )
+    if save_rolling:
+        save_rolling_avg(
+            mean_df, f"{model_dir}/{SMA_MEAN_FILE}", window_size=3, min_periods=1
+        )
 
     std = np.nanstd(seeds_results, axis=0)
     std_df = pd.DataFrame(std, columns=EVAL_COLS, index=interval_steps)
     std_df.index.name = TRAINING_STEP_COL
     std_df.to_csv(f"{model_dir}/{STD_FILE}", index=True)
 
-    save_rolling_avg(
-        std_df, f"{model_dir}/{SMA_STD_FILE}", window_size=3, min_periods=1
-    )
+    if save_rolling:
+        save_rolling_avg(
+            std_df, f"{model_dir}/{SMA_STD_FILE}", window_size=3, min_periods=1
+        )
 
 
 def save_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1):

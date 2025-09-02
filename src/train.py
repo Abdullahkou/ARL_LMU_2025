@@ -96,7 +96,7 @@ def train(
             if not os.path.exists(results_dir):
                 os.makedirs(results_dir)
 
-            training_results = []
+            training_results: list[tuple] = []
 
             results_file = f"{results_dir}/{TRAINING_RESULTS_FILE}"
 

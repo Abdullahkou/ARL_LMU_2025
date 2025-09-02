@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, TypeAlias
 
 import gymnasium
 import numpy as np
@@ -9,7 +9,9 @@ from agents.baseAgent import AlgoConfig, IEnsemble
 from agents.models import RandomAgent
 from tuning.training_config import RANDOM_AGENT, SEED_PREFIX
 
-ALGO_LOADERS = {
+Algorithm: TypeAlias = PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent
+
+ALGO_LOADERS: dict[str, Callable[[str, gymnasium.Env], Algorithm]] = {
     "PPO": lambda path, env: PPO.load(path, env=env),
     "A2C": lambda path, env: A2C.load(path, env=env),
     "DQN": lambda path, env: DQN.load(path, env=env),
@@ -43,7 +45,7 @@ class EvalEnsemble(IEnsemble):
         self.is_discrete = config.get("is_discrete", False)
         self.env = config.get("env", gymnasium.make("CartPole-v1"))
 
-        self.ensemble: list[PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent] = []
+        self.ensemble: list[Algorithm] = []
         self.load()
 
     def load(self, _: str = "") -> None:
@@ -55,10 +57,8 @@ class EvalEnsemble(IEnsemble):
         # TODO: ensemble strategy (best seed?)
         for algo_name, algo_path in self.algos:
             file = f"{algo_path}/{SEED_PREFIX}0.zip"
-            algo: PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent = ALGO_LOADERS[
-                algo_name
-            ](file, env=self.env)
-            algo.seed = self.seed
+            algo: Algorithm = ALGO_LOADERS[algo_name](file, env=self.env)
+            algo.set_random_seed(self.seed)
             self.ensemble.append(algo)
 
     def predict(self, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
