@@ -1,4 +1,4 @@
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, Optional, List, Tuple, Dict, TypeAlias
 
 import gymnasium
 import numpy as np
@@ -20,6 +20,8 @@ ALGO_LOADERS: dict[str, Callable[[str, gymnasium.Env], Algorithm]] = {
     "DDPG": lambda path, env: DDPG.load(path, env=env),
     RANDOM_AGENT: lambda _, env: RandomAgent(action_space=env.action_space),
 }
+
+base_dir = "results/test/Walker2d-v5/1M/train"
 
 
 class EvalEnsemble(IEnsemble):
@@ -46,6 +48,12 @@ class EvalEnsemble(IEnsemble):
         self.env = config.get("env", gymnasium.make("CartPole-v1"))
 
         self.ensemble: list[Algorithm] = []
+        self.eval_csv = [
+            ("PPO", f"{base_dir}/PPO/seeds/seed_0/training_results.csv"),
+            ("SAC", f"{base_dir}/SAC/seeds/seed_0/training_results.csv"),
+            ("TD3", f"{base_dir}/TD3/seeds/seed_0/training_results.csv"),
+        ]
+
         self.load()
 
     def load(self, _: str = "") -> None:
@@ -61,7 +69,12 @@ class EvalEnsemble(IEnsemble):
             algo.set_random_seed(self.seed)
             self.ensemble.append(algo)
 
-    def predict(self, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
+    def predict(
+        self,
+        obs: np.ndarray,
+        deterministic: bool = False,
+        aggregation: str = "performance",
+    ) -> np.ndarray:
         """
         Predict the action to take given an observation using majority voting for discrete
         actions or averaging for continuous actions.
@@ -69,6 +82,7 @@ class EvalEnsemble(IEnsemble):
         :param obs: observation to predict action for
         :param deterministic: whether to use deterministic action selection
          action to take
+        :param aggregation: method to aggregate actions ('mean' or 'weighted' or "performance")
         """
 
         predictions = [algo.predict(obs, deterministic)[0] for algo in self.ensemble]
@@ -77,9 +91,36 @@ class EvalEnsemble(IEnsemble):
             predictions = np.array(predictions)
             action, _ = mode(predictions, axis=0)
             return action.squeeze()
-        else:
+
+        if len(predictions) < 2:
+            return predictions[0]
+
+        if aggregation == "mean":
             predictions = np.array(predictions)
             return np.mean(predictions, axis=0)
+
+        elif aggregation == "weighted":
+            mean_action = np.mean(predictions, axis=0)
+            distances = np.linalg.norm(predictions - mean_action, axis=1)
+            epsilon = 1e-8
+            weights = 1.0 / (distances + epsilon)
+            normalized_weights = weights / np.sum(weights)
+            weighted_action = np.average(
+                predictions, axis=0, weights=normalized_weights
+            )
+            return weighted_action
+
+        elif aggregation == "performance":
+            perf_weights_dict = self.calculate_performance_weights(self.eval_csv)
+            perf_weights = np.array(
+                [perf_weights_dict[name] for name, _ in self.eval_csv]
+            )
+
+            weighted_action = np.average(predictions, axis=0, weights=perf_weights)
+            return weighted_action
+
+        else:
+            raise ValueError(f"Unknown aggregation method: {aggregation}")
 
     def learn(
         self,
@@ -91,3 +132,27 @@ class EvalEnsemble(IEnsemble):
 
     def save(self, base_dir: str) -> None:
         pass  # Not implemented
+
+    def calculate_performance_weights(
+        self, csv_file_paths: List[Tuple[str, str]], temperature: float = 100
+    ) -> Optional[Dict[str, float]]:
+        model_names = []
+        performance_scores = []
+
+        for name, csv_file_path in csv_file_paths:
+            df = pd.read_csv(csv_file_path)
+            if "Reward" not in df.columns:
+                print(f"Fehler: Spalte 'Reward' in '{csv_file_path}' nicht gefunden.")
+                return None
+
+            last_reward = df["Reward"].iloc[-1]
+            model_names.append(name)
+            performance_scores.append(float(last_reward))
+
+        scores = np.array(performance_scores)
+        stable_scores = (scores - np.max(scores)) / temperature  # Temperatur hier
+        exp_scores = np.exp(stable_scores)
+        weights = exp_scores / np.sum(exp_scores)
+
+        name_to_weight_map = dict(zip(model_names, weights))
+        return name_to_weight_map
