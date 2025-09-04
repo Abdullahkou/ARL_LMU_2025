@@ -76,7 +76,7 @@ def evaluate_checkpoints():
             eval_env.reset(seed=eval_env_seed)
             algos = [
                 ("PPO", f"{base_dir}/PPO/seeds/seed_{seed}/checkpoint_{i}.zip"),
-                ("SAC", f"{base_dir}/SAC/seeds/seed_{seed}/checkpoint_{i}.zip"),
+                #("SAC", f"{base_dir}/SAC/seeds/seed_{seed}/checkpoint_{i}.zip"),
                 ("TD3", f"{base_dir}/TD3/seeds/seed_{seed}/checkpoint_{i}.zip"),
             ]
             ensemble = EvalEnsemble({"algos": algos, "env": eval_env, "seed": seed})
@@ -84,7 +84,7 @@ def evaluate_checkpoints():
                 model=ensemble,
                 eval_env=eval_env,
                 num_episodes=20,
-                save_file=f"results/test/Walker2d-v5/1.5M/eval/checkpoints_{'_'.join([algo_name for algo_name, _ in algos])}_mean/seeds/seed_{seed}/training_results.csv",
+                save_file=f"results/test/Walker2d-v5/1.5M/eval/checkpoints_{'_'.join([algo_name for algo_name, _ in algos])}_weighted/seeds/seed_{seed}/training_results.csv",
                 use_rendering=False,
                 evaluating_checkpoints=True,
                 current_step=(config.steps // 20) * i,
@@ -92,7 +92,7 @@ def evaluate_checkpoints():
             seed_results.append([results])
         save_seed_totals(
             seeds_results=seed_results,
-            model_dir=f"results/test/Walker2d-v5/1.5M/eval/checkpoints_{'_'.join([algo_name for algo_name, _ in algos])}_mean",
+            model_dir=f"results/test/Walker2d-v5/1.5M/eval/checkpoints_{'_'.join([algo_name for algo_name, _ in algos])}_weighted",
             interval_steps=[0],
             save_rolling=True,
         )

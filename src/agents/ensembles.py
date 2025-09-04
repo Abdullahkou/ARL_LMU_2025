@@ -73,7 +73,7 @@ class EvalEnsemble(IEnsemble):
         self,
         obs: np.ndarray,
         deterministic: bool = False,
-        aggregation: str = "mean",
+        aggregation: str = "weighted",
     ) -> np.ndarray:
         """
         Predict the action to take given an observation using majority voting for discrete

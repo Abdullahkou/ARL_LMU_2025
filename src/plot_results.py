@@ -37,8 +37,8 @@ def plot_results(
     x_label = "Training Steps"
 
     for col_name, title, file_name in [
-        (STEPS, "Steps", "steps_2_3_mean.png"),
-        (REWARD, "Reward", "reward_2_3_mean.png"),
+        (STEPS, "Steps", "steps_2_3_weighted.png"),
+        (REWARD, "Reward", "reward_2_3_weighted.png"),
     ]:
         plt.margins(x=0)
         plt.title(title)
@@ -104,13 +104,13 @@ def main():
             f"{base_dir}/TD3/{SMA_MEAN_FILE}",
             f"{base_dir}/TD3/{SMA_STD_FILE}",
         ),
-        "PPO_TD3 (mean)": (
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_mean/sma_mean.csv",
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_mean/sma_std.csv"
+        "PPO_TD3 (weighted)": (
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_mean.csv",
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_std.csv"
         ),
-        "PPO_SAC_TD3 (mean)": (
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean/sma_mean.csv",
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean/sma_std.csv"
+        "PPO_SAC_TD3 (weighted)": (
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_mean.csv",
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_std.csv"
         )
     }
 
