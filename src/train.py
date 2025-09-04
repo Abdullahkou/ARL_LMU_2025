@@ -161,7 +161,7 @@ def main():
         "--algos",
         help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
         type=str,
-        default=["random"],
+        default=["ppo"],
         nargs="+",
     )
     parser.add_argument(

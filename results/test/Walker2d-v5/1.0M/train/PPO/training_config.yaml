@@ -1,26 +1,22 @@
-algorithm: RANDOM
+algorithm: PPO
 eval_episodes: 20
 eval_phases: 20
 fixed_env_seeds:
 - 2
 - 3
 hyper_params:
-    batch_size: 8
+    batch_size: 16
     clip_range: 0.4
     ent_coef: 0.00013057334805552262
     gae_lambda: 0.92
-    gamma: 0.98
+    gamma: 0.9
     learning_rate: 3.791707778339674e-05
-    max_grad_norm: 0.6
-    n_envs: 1
-    n_epochs: 5
-    n_steps: 2048
-    n_timesteps: 1000000
+    n_steps: 4096
     vf_coef: 0.6167177795726859
-ignore_hyper_params: true
+ignore_hyper_params: false
 seeds:
 - 0
 - 1
 - 2
-steps: 1500000
+steps: 1000000
 use_fixed_env_seeds: true

@@ -114,7 +114,7 @@ class IEnsemble(Protocol):
         pass
 
 
-class BaseAgent(Protocol):
+class BaseAgent():
     """Basic agent interface"""
 
     def __init__(
