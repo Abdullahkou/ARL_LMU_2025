@@ -54,6 +54,8 @@ class EvalEnsemble(IEnsemble):
             ("TD3", f"{base_dir}/TD3/seeds/seed_0/training_results.csv"),
         ]
 
+        self.perf_weights_dict = self.calculate_performance_weights(self.eval_csv)
+
         self.load()
 
     def load(self, _: str = "") -> None:
@@ -64,7 +66,7 @@ class EvalEnsemble(IEnsemble):
 
         # TODO: ensemble strategy (best seed?)
         for algo_name, algo_path in self.algos:
-            #file = f"{algo_path}/{SEED_PREFIX}0.zip"
+            # file = f"{algo_path}/{SEED_PREFIX}0.zip"
             algo: Algorithm = ALGO_LOADERS[algo_name](algo_path, env=self.env)
             algo.set_random_seed(self.seed)
             self.ensemble.append(algo)
@@ -111,9 +113,8 @@ class EvalEnsemble(IEnsemble):
             return weighted_action
 
         elif aggregation == "performance":
-            perf_weights_dict = self.calculate_performance_weights(self.eval_csv)
             perf_weights = np.array(
-                [perf_weights_dict[name] for name, _ in self.eval_csv]
+                [self.perf_weights_dict[name] for name, _ in self.eval_csv]
             )
 
             weighted_action = np.average(predictions, axis=0, weights=perf_weights)
@@ -150,7 +151,7 @@ class EvalEnsemble(IEnsemble):
             performance_scores.append(float(last_reward))
 
         scores = np.array(performance_scores)
-        stable_scores = (scores - np.max(scores)) / temperature  # Temperatur hier
+        stable_scores = (scores - np.max(scores)) / temperature
         exp_scores = np.exp(stable_scores)
         weights = exp_scores / np.sum(exp_scores)
 
