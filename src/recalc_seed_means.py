@@ -40,7 +40,7 @@ def recalc_seed_means(model_dir):
 
 
 def main():
-    model_dir = "results/test/Pendulum-v1/train/SAC"
+    model_dir = "results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean"
 
     recalc_seed_means(model_dir)
 

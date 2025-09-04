@@ -64,8 +64,8 @@ class EvalEnsemble(IEnsemble):
 
         # TODO: ensemble strategy (best seed?)
         for algo_name, algo_path in self.algos:
-            file = f"{algo_path}/{SEED_PREFIX}0.zip"
-            algo: Algorithm = ALGO_LOADERS[algo_name](file, env=self.env)
+            #file = f"{algo_path}/{SEED_PREFIX}0.zip"
+            algo: Algorithm = ALGO_LOADERS[algo_name](algo_path, env=self.env)
             algo.set_random_seed(self.seed)
             self.ensemble.append(algo)
 
@@ -73,7 +73,7 @@ class EvalEnsemble(IEnsemble):
         self,
         obs: np.ndarray,
         deterministic: bool = False,
-        aggregation: str = "performance",
+        aggregation: str = "mean",
     ) -> np.ndarray:
         """
         Predict the action to take given an observation using majority voting for discrete

@@ -1,5 +1,6 @@
 import csv
 import os
+from pathlib import Path
 
 from gymnasium import Env
 
@@ -55,10 +56,14 @@ def eval(
     use_rendering=False,
     eval_ep: int = 0,
     current_step: int = 0,
+    evaluating_checkpoints=False,
 ):
     print(f"Starting evaluation {eval_ep}")
 
-    if eval_ep == 0:
+    save_path = Path(save_file)
+    if eval_ep == 0 and (not evaluating_checkpoints or (evaluating_checkpoints and not save_path.exists())):
+        print("created")
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         with open(save_file, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([TRAINING_STEP_COL] + EVAL_COLS)

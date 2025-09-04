@@ -64,7 +64,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 @dataclass
 class TrainingConfig:
-    algorithm: str
+    algorithm: str = ""
     steps: int = 100_000
 
     seeds: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])
