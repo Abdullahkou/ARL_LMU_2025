@@ -8,6 +8,8 @@ from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from agents.models import RandomAgent, SB3Callback
 from tuning.training_config import RANDOM_AGENT
 
+from torch import nn
+
 
 class Algo(Enum):
     PPO = PPO
@@ -19,9 +21,22 @@ class Algo(Enum):
     RANDOM = RandomAgent
 
 
+ppo_policy_kwargs = {
+    "activation_fn": nn.ReLU,
+    "net_arch": {
+        "pi": [512, 256, 128, 64],  # Eine tiefere Policy-Netzwerk-Architektur
+        "vf": [512, 256, 128, 64],  # Eine tiefere Wertfunktions-Netzwerk-Architektur
+    },
+}
+
+
 ALGO_IMPLS = {
     "PPO": lambda env, seed, hyper_params={}: PPO(
-        "MlpPolicy", env, seed=seed, **hyper_params
+        # "MlpPolicy", env, seed=seed, **hyper_params, policy_kwargs=ppo_policy_kwargs
+        "MlpPolicy",
+        env,
+        seed=seed,
+        **hyper_params,
     ),
     "A2C": lambda env, seed, hyper_params={}: A2C(
         "MlpPolicy", env, seed=seed, **hyper_params
@@ -114,7 +129,7 @@ class IEnsemble(Protocol):
         pass
 
 
-class BaseAgent():
+class BaseAgent:
     """Basic agent interface"""
 
     def __init__(
