@@ -9,6 +9,7 @@ from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from agents.baseAgent import AlgoConfig, IEnsemble
 from agents.models import RandomAgent
 from tuning.training_config import RANDOM_AGENT
+from utils.logging import mmd_sq
 
 Algorithm: TypeAlias = PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent
 
@@ -158,3 +159,77 @@ class EvalEnsemble(IEnsemble):
 
         name_to_weight_map = dict(zip(model_names, weights))
         return name_to_weight_map
+
+    def collect_individual_rollouts(
+        self, env: gymnasium.Env, n_steps=1000, max_states: int = None
+    ):
+        states_per_model = list[np.ndarray]()
+        for m in self.ensemble:
+            s = collect_rollouts(m, env, n_steps=n_steps)
+
+            # Subsample states if needed
+            if max_states and len(s) > max_states:
+                idx = np.random.choice(len(s), max_states, replace=False)
+                s = s[idx]
+
+            states_per_model.append(s)
+
+        return states_per_model
+
+    def action_disagreement(self, states: np.ndarray):
+        """
+        Computes mean std of actions across models at given states.
+        models: list of RL policies
+        states: (n_states, obs_dim)
+        """
+        all_actions = []
+        for m in self.ensemble:
+            acts = []
+            for s in states:
+                a, _ = m.predict(s)
+
+                acts.append(a)
+            all_actions.append(np.stack(acts))
+        all_actions = np.stack(all_actions)  # shape: (n_models, n_states, act_dim)
+        return float(np.std(all_actions, axis=0).mean())
+
+    def state_visit_divergence(self, states_per_model: list[np.ndarray]):
+        """
+        Computes pairwise MMD^2 between states of models in the ensemble.
+
+        :param states_per_model: list of (n_states, obs_dim) arrays per model
+        :return: (mmd_mean, mmd_min, mmd_max)
+        """
+        num_models = len(states_per_model)
+        mmd_vals = []
+        for i in range(num_models):
+            for j in range(i + 1, num_models):
+                mmd_vals.append(mmd_sq(states_per_model[i], states_per_model[j]))
+
+        mmd_mean = np.mean(mmd_vals)
+        mmd_min: np.floating = np.min(mmd_vals)
+        mmd_max: np.floating = np.max(mmd_vals)
+
+        return mmd_mean, mmd_min, mmd_max
+
+
+def collect_rollouts(model: Algorithm, env: gymnasium.Env, n_steps=1000):
+    """Rolls out episodes to collect visited states."""
+    states = []
+    steps = 0
+    while steps < n_steps:
+        state: np.ndarray
+        state, _ = env.reset()
+        done = False
+        while not done:
+            action, _ = model.predict(state)
+            state, _, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+
+            steps += 1
+            states.append(state)
+
+            if steps >= n_steps:
+                break
+
+    return np.array(states)

@@ -4,6 +4,7 @@ from collections import deque
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
+from scipy.spatial.distance import cdist
 
 from tuning.training_config import MEAN_FILE, SMA_MEAN_FILE, SMA_STD_FILE, STD_FILE
 
@@ -17,6 +18,18 @@ REWARD = "Reward"
 EVAL_COLS = [
     STEPS,
     REWARD,
+]
+
+ACTION_DISAGREEMENT = "Action Disagreement"
+MMD_MEAN = "MMD Mean"
+MMD_MIN = "MMD Min"
+MMD_MAX = "MMD Max"
+
+DIVERSITY_COLS = [
+    ACTION_DISAGREEMENT,
+    MMD_MEAN,
+    MMD_MIN,
+    MMD_MAX,
 ]
 
 
@@ -66,9 +79,10 @@ def save_seed_totals(
     model_dir: str,
     interval_steps: list[int],
     save_rolling=True,
+    columns=EVAL_COLS,
 ):
     mean = np.nanmean(seeds_results, axis=0)
-    mean_df = pd.DataFrame(mean, columns=EVAL_COLS, index=interval_steps)
+    mean_df = pd.DataFrame(mean, columns=columns, index=interval_steps)
     mean_df.index.name = TRAINING_STEP_COL
     mean_df.to_csv(f"{model_dir}/{MEAN_FILE}", index=True)
 
@@ -78,7 +92,7 @@ def save_seed_totals(
         )
 
     std = np.nanstd(seeds_results, axis=0)
-    std_df = pd.DataFrame(std, columns=EVAL_COLS, index=interval_steps)
+    std_df = pd.DataFrame(std, columns=columns, index=interval_steps)
     std_df.index.name = TRAINING_STEP_COL
     std_df.to_csv(f"{model_dir}/{STD_FILE}", index=True)
 
@@ -91,6 +105,24 @@ def save_seed_totals(
 def save_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1):
     rolling_avg = df.rolling(window=window_size, min_periods=min_periods).mean()
     rolling_avg.to_csv(file_name)
+
+
+def __rbf_kernel(x: np.ndarray, y: np.ndarray, sigma: float):
+    pairwise = cdist(x, y)
+    return np.exp(-pairwise / (2 * sigma**2))
+
+
+def mmd_sq(X: np.ndarray, Y: np.ndarray, sigma: float = None):
+    """Squared Maximum Mean Discrepancy between two sets of states."""
+    if sigma is None:
+        dists = cdist(X, Y)
+        sigma = np.median(dists)
+
+    kxx = __rbf_kernel(X, X, sigma)
+    kyy = __rbf_kernel(Y, Y, sigma)
+    kxy = __rbf_kernel(X, Y, sigma)
+
+    return kxx.mean() + kyy.mean() - 2 * kxy.mean()
 
 
 def parse_steps(total_steps: int):

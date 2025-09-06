@@ -17,6 +17,7 @@ MEAN_FILE = "mean.csv"
 SMA_MEAN_FILE = "sma_mean.csv"
 STD_FILE = "std.csv"
 SMA_STD_FILE = "sma_std.csv"
+ENSEMBLE_DIVERSITY_FILE = "ensemble_diversity.csv"
 
 TRAIN_DIR = "train"
 EVAL_DIR = "eval"
