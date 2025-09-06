@@ -43,9 +43,9 @@ def main():
 
     env_id = "Walker2d-v5"
     algos = [
-        ("PPO", f"{base_dir}/PPO/{MODELS_DIR}"),
-        ("SAC", f"{base_dir}/SAC/{MODELS_DIR}"),
-        ("TD3", f"{base_dir}/TD3/{MODELS_DIR}"),
+        ("PPO", f"{base_dir}/PPO/{MODELS_DIR}/seed_0"),
+        ("SAC", f"{base_dir}/SAC/{MODELS_DIR}/seed_0"),
+        ("TD3", f"{base_dir}/TD3/{MODELS_DIR}/seed_0"),
     ]
 
     render_eval(base_dir=base_dir, env_id=env_id, algos=algos, num_episodes=20)
