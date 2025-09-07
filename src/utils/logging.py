@@ -1,4 +1,5 @@
 import csv
+import os
 from collections import deque
 
 import numpy as np
@@ -70,10 +71,14 @@ def save_seed_totals(
     interval_steps: list[int],
     save_rolling=True,
     columns=EVAL_COLS,
+    index_name=TRAINING_STEP_COL,
 ):
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+
     mean = np.nanmean(seeds_results, axis=0)
     mean_df = pd.DataFrame(mean, columns=columns, index=interval_steps)
-    mean_df.index.name = TRAINING_STEP_COL
+    mean_df.index.name = index_name
     mean_df.to_csv(f"{model_dir}/{MEAN_FILE}", index=True)
 
     if save_rolling:
@@ -83,7 +88,7 @@ def save_seed_totals(
 
     std = np.nanstd(seeds_results, axis=0)
     std_df = pd.DataFrame(std, columns=columns, index=interval_steps)
-    std_df.index.name = TRAINING_STEP_COL
+    std_df.index.name = index_name
     std_df.to_csv(f"{model_dir}/{STD_FILE}", index=True)
 
     if save_rolling:

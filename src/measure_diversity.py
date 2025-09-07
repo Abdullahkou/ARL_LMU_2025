@@ -14,12 +14,7 @@ from tuning.training_config import (
     STATE_DISCREPANCY_FILE,
     load_training_config,
 )
-from utils.logging import (
-    TOTAL_ACTION_DIS_COL,
-    TOTAL_STATE_DIS_COL,
-    TRAINING_STEP_COL,
-    save_seed_totals,
-)
+from utils.logging import TOTAL_ACTION_DIS_COL, TOTAL_STATE_DIS_COL, save_seed_totals
 
 
 def __evaluate_ensemble_checkpoint(
@@ -76,8 +71,8 @@ def evaluate_ensemble_diversity(
 
     PAIRWISE_COLS = [f"{a[0]}-{a[1]}" for a in combinations([a[0] for a in algos], 2)]
 
-    ACTION_DIS_COLS = [TRAINING_STEP_COL, TOTAL_ACTION_DIS_COL] + PAIRWISE_COLS
-    STATE_DIS_COLS = [TRAINING_STEP_COL, TOTAL_STATE_DIS_COL] + PAIRWISE_COLS
+    ACTION_DIS_COLS = [TOTAL_ACTION_DIS_COL] + PAIRWISE_COLS
+    STATE_DIS_COLS = [TOTAL_STATE_DIS_COL] + PAIRWISE_COLS
 
     seed_act_dis_results = list[np.ndarray]()
     seed_state_dis_results = list[np.ndarray]()
