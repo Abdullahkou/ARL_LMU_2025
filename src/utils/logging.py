@@ -4,7 +4,6 @@ from collections import deque
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
-from scipy.spatial.distance import cdist
 
 from tuning.training_config import MEAN_FILE, SMA_MEAN_FILE, SMA_STD_FILE, STD_FILE
 
@@ -20,17 +19,8 @@ EVAL_COLS = [
     REWARD,
 ]
 
-ACTION_DISAGREEMENT = "Action Disagreement"
-MMD_MEAN = "MMD Mean"
-MMD_MIN = "MMD Min"
-MMD_MAX = "MMD Max"
-
-DIVERSITY_COLS = [
-    ACTION_DISAGREEMENT,
-    MMD_MEAN,
-    MMD_MIN,
-    MMD_MAX,
-]
+TOTAL_ACTION_DIS_COL = "total action disagreement"
+TOTAL_STATE_DIS_COL = "total state discrepancy"
 
 
 class EpisodeLogger:
@@ -107,22 +97,81 @@ def save_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1
     rolling_avg.to_csv(file_name)
 
 
-def __rbf_kernel(x: np.ndarray, y: np.ndarray, sigma: float):
-    pairwise = cdist(x, y)
-    return np.exp(-pairwise / (2 * sigma**2))
+def mix_rbf_mmsd(X: np.ndarray, Y: np.ndarray, sigmas=(1,)):
+    """
+    Mixture RBF kernel Squared Maximum Mean Discrepancy between two sets of states.
+    New Method of measuring the distance between two distributions.
+    It 'can comprehensively reflect the mean and variance information of data samples in the reproducing kernel'.
+
+    cf. https://github.com/liguge/Maximum-mean-square-discrepancy
+    """
+    K_XX, K_XY, K_YY = __mix_rbf_kernel(X, Y, sigmas)
+    mmds = __mmsd(K_XX, K_XY, K_YY)
+
+    return mmds
 
 
-def mmd_sq(X: np.ndarray, Y: np.ndarray, sigma: float = None):
-    """Squared Maximum Mean Discrepancy between two sets of states."""
-    if sigma is None:
-        dists = cdist(X, Y)
-        sigma = np.median(dists)
+def __mix_rbf_kernel(X: np.ndarray, Y: np.ndarray, sigmas: tuple) -> tuple:
+    """
+    Mix RBF kernel between two sets of states.
 
-    kxx = __rbf_kernel(X, X, sigma)
-    kyy = __rbf_kernel(Y, Y, sigma)
-    kxy = __rbf_kernel(X, Y, sigma)
+    cf. https://github.com/liguge/Maximum-mean-square-discrepancy
+    """
+    wts = [1] * len(sigmas)
 
-    return kxx.mean() + kyy.mean() - 2 * kxy.mean()
+    # (n_states, n_states)
+    # pairwise products of state vectors
+    XX = np.matmul(X, X.T)
+    XY = np.matmul(X, Y.T)
+    YY = np.matmul(Y, Y.T)
+
+    # (n_states,), left-right/top-down diagonal of matrices
+    # axis1 and axis2 are the two last axes
+    X_sqnorms = np.diagonal(XX, axis1=-2, axis2=-1)
+    Y_sqnorms = np.diagonal(YY, axis1=-2, axis2=-1)
+
+    K_XX, K_XY, K_YY = 0.0, 0.0, 0.0
+    for sigma, wt in zip(sigmas, wts):
+        gamma = 1 / (2 * sigma**2)
+        K_XX += wt * np.exp(-gamma * (-2 * XX + __c(X_sqnorms) + __r(X_sqnorms)))
+        K_XY += wt * np.exp(-gamma * (-2 * XY + __c(X_sqnorms) + __r(Y_sqnorms)))
+        K_YY += wt * np.exp(-gamma * (-2 * YY + __c(Y_sqnorms) + __r(Y_sqnorms)))
+
+        return K_XX, K_XY, K_YY  # ??
+
+
+def __c(x: np.ndarray):
+    return np.expand_dims(x, 1)
+
+
+def __r(x: np.ndarray):
+    return np.expand_dims(x, 0)
+
+
+def __mmsd(
+    K_XX: np.ndarray,
+    K_XY: np.ndarray,
+    K_YY: np.ndarray,
+):
+    """
+    Maximum Mean Square Discrepancy between two sets of states.
+
+    cf. https://github.com/liguge/Maximum-mean-square-discrepancy
+    """
+    m = K_XX.shape[0]
+    n = K_YY.shape[0]
+
+    C_K_XX = np.pow(K_XX, 2)
+    C_K_YY = np.pow(K_YY, 2)
+    C_K_XY = np.pow(K_XY, 2)
+
+    mmsd: np.floating = (
+        np.sum(C_K_XX) / (m * m)
+        + np.sum(C_K_YY) / (n * n)
+        - 2 * np.sum(C_K_XY) / (m * n)
+    )
+
+    return mmsd
 
 
 def parse_steps(total_steps: int):

@@ -1,25 +1,31 @@
 import csv
 import os
+from itertools import combinations
 
 import gymnasium
 import numpy as np
 
 from agents.ensembles import EvalEnsemble
 from tuning.training_config import (
+    ACTION_DISAGREEMENT_FILE,
     CHECKPOINT_PREFIX,
-    ENSEMBLE_DIVERSITY_FILE,
     SEED_PREFIX,
     SEEDS_DIR,
+    STATE_DISCREPANCY_FILE,
     load_training_config,
 )
-from utils.logging import DIVERSITY_COLS, TRAINING_STEP_COL, save_seed_totals
+from utils.logging import (
+    TOTAL_ACTION_DIS_COL,
+    TOTAL_STATE_DIS_COL,
+    TRAINING_STEP_COL,
+    save_seed_totals,
+)
 
 
 def __evaluate_ensemble_checkpoint(
     ensemble: EvalEnsemble,
-    env: gymnasium.Env,
+    envs: list[gymnasium.Env],
     num_rollout_steps=1000,
-    max_states: int = None,
 ):
     """
     Evaluates diversity of an ensemble of models on given environment.
@@ -34,17 +40,16 @@ def __evaluate_ensemble_checkpoint(
     """
     # Collect rollouts per model
     states_per_model = ensemble.collect_individual_rollouts(
-        env, n_steps=num_rollout_steps, max_states=max_states
+        envs=envs, n_steps=num_rollout_steps
     )
 
     ####### action disagreement ############
-    total_states = np.vstack(states_per_model)
-    act_dis = ensemble.action_disagreement(total_states)
+    act_dis = ensemble.action_disagreement(states_per_model)
 
     ####### state visitation divergence (pairwise Squared Maximum Mean Discrepancy) ############
-    mmd_mean, mmd_min, mmd_max = ensemble.state_visit_divergence(states_per_model)
+    state_dis = ensemble.state_visit_divergence(states_per_model)
 
-    return act_dis, (mmd_mean, mmd_min, mmd_max)
+    return act_dis, state_dis
 
 
 def evaluate_ensemble_diversity(
@@ -53,7 +58,6 @@ def evaluate_ensemble_diversity(
     algos: list[tuple[str, str]],
     env_id: str,
     num_rollout_steps=1000,
-    max_states=None,
 ):
     """
     Evaluates an ensemble of models in a set of checkpoints.
@@ -64,29 +68,44 @@ def evaluate_ensemble_diversity(
     seeds = config.seeds
     eval_env_seed = config.fixed_env_seeds[1]
 
-    eval_env = gymnasium.make(env_id, render_mode="rgb_array")
-    eval_env.reset(seed=eval_env_seed)
-
     eval_phases = config.eval_phases
     steps = config.steps
     eval_schedule = steps // eval_phases
 
     interval_steps = [i * eval_schedule for i in range(eval_phases + 1)]
 
-    seeds_results: list[np.ndarray] = []
+    PAIRWISE_COLS = [f"{a[0]}-{a[1]}" for a in combinations([a[0] for a in algos], 2)]
+
+    ACTION_DIS_COLS = [TRAINING_STEP_COL, TOTAL_ACTION_DIS_COL] + PAIRWISE_COLS
+    STATE_DIS_COLS = [TRAINING_STEP_COL, TOTAL_STATE_DIS_COL] + PAIRWISE_COLS
+
+    seed_act_dis_results = list[np.ndarray]()
+    seed_state_dis_results = list[np.ndarray]()
     for seed in seeds:
         seed_dir = f"{target_dir}/{SEEDS_DIR}/{SEED_PREFIX}{seed}"
 
         if not os.path.exists(seed_dir):
             os.makedirs(seed_dir)
 
-        save_file = f"{seed_dir}/{ENSEMBLE_DIVERSITY_FILE}"
+        action_dis_file = f"{seed_dir}/{ACTION_DISAGREEMENT_FILE}"
+        state_dis_file = f"{seed_dir}/{STATE_DISCREPANCY_FILE}"
 
-        with open(save_file, "w", newline="") as f:
+        with open(action_dis_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([TRAINING_STEP_COL] + DIVERSITY_COLS)
+            writer.writerow(ACTION_DIS_COLS)
 
-        results = []
+        with open(state_dis_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(STATE_DIS_COLS)
+
+        envs = list[gymnasium.Env]()
+        for _ in algos:
+            env = gymnasium.make(env_id)
+            env.reset(seed=eval_env_seed)
+            envs.append(env)
+
+        action_dis_results = list[tuple[np.floating]]()
+        state_dis_results = list[tuple[np.floating]]()
         for checkpoint in range(eval_phases + 1):
             print(f"Evaluating ensemble for seed {seed} checkpoint {checkpoint}")
             checkpoint_models = [
@@ -98,32 +117,47 @@ def evaluate_ensemble_diversity(
             ]
 
             ensemble = EvalEnsemble(
-                {"algos": checkpoint_models, "env": eval_env, "seed": seed}
+                {"algos": checkpoint_models, "env": envs[0], "seed": seed}
             )
 
-            # Evaluate ensemble
-            act_dis, (mmd_mean, mmd_min, mmd_max) = __evaluate_ensemble_checkpoint(
+            act_dis, state_dis = __evaluate_ensemble_checkpoint(
                 ensemble,
-                eval_env,
+                envs,
                 num_rollout_steps=num_rollout_steps,
-                max_states=max_states,
             )
 
-            result = (act_dis, mmd_mean, mmd_min, mmd_max)
+            action_dis_result = (act_dis["total"],) + tuple(
+                act_dis["pairwise"].values()
+            )
+            state_dis_result = (state_dis["total"],) + tuple(
+                state_dis["pairwise"].values()
+            )
 
-            with open(save_file, "a", newline="") as f:
+            with open(action_dis_file, "a", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(result)
+                writer.writerow((interval_steps[checkpoint],) + action_dis_result)
 
-            results.append(result)
+            with open(state_dis_file, "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow((interval_steps[checkpoint],) + state_dis_result)
 
-        seeds_results.append(results)
+            action_dis_results.append(action_dis_result)
+            state_dis_results.append(state_dis_result)
+
+        seed_act_dis_results.append(action_dis_results)
+        seed_state_dis_results.append(state_dis_results)
 
     save_seed_totals(
-        seeds_results=seeds_results,
-        model_dir=target_dir,
+        seeds_results=seed_act_dis_results,
+        model_dir=f"{target_dir}/action_disagreement/",
         interval_steps=interval_steps,
-        columns=DIVERSITY_COLS,
+        columns=ACTION_DIS_COLS,
+    )
+    save_seed_totals(
+        seeds_results=seed_state_dis_results,
+        model_dir=f"{target_dir}/state_discrepancy/",
+        interval_steps=interval_steps,
+        columns=STATE_DIS_COLS,
     )
 
 
