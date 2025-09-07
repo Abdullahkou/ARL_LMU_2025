@@ -150,6 +150,7 @@ class BaseAgent:
 
         builder = ALGO_IMPLS[algos[0]]
         self.agents = builder(train_env, seed, hyper_params)
+        self.q_getters = {}
 
     def learn(
         self,

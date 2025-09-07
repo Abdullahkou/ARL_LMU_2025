@@ -37,8 +37,8 @@ def plot_results(
     x_label = "Training Steps"
 
     for col_name, title, file_name in [
-        (STEPS, "Steps", "steps.png"),
-        (REWARD, "Reward", "reward.png"),
+        (STEPS, "Steps", "steps_3_critic.png"),
+        (REWARD, "Reward", "reward_3_critic.png"),
     ]:
         plt.margins(x=0)
         plt.title(title)
@@ -84,41 +84,41 @@ def plot_results(
 
 
 def main():
-    base_dir = f"results/test/Walker2d-v5/1.0M/{TRAIN_DIR}"
+    base_dir = f"results/test/Walker2d-v5/1.5M/{TRAIN_DIR}"
     save_dir = f"{base_dir}/_plots"
 
+    #agents = {
+    #    "PPO": (
+    #        f"{base_dir}/PPO/{SMA_MEAN_FILE}",
+    #        f"{base_dir}/PPO/{SMA_STD_FILE}",
+    #    )
+    #}
     agents = {
+        RANDOM_AGENT: (
+            f"{base_dir}/RANDOM/{SMA_MEAN_FILE}",
+            f"{base_dir}/RANDOM/{SMA_STD_FILE}",
+        ),
+        "SAC": (
+            f"{base_dir}/SAC/{SMA_MEAN_FILE}",
+            f"{base_dir}/SAC/{SMA_STD_FILE}",
+        ),
         "PPO": (
             f"{base_dir}/PPO/{SMA_MEAN_FILE}",
             f"{base_dir}/PPO/{SMA_STD_FILE}",
+        ),
+        "TD3": (
+            f"{base_dir}/TD3/{SMA_MEAN_FILE}",
+            f"{base_dir}/TD3/{SMA_STD_FILE}",
+        ),
+        "PPO_SAC_TD3 (mean)": (
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean/sma_mean.csv",
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean/sma_std.csv"
+        ),
+        "PPO_SAC_TD3 (critic)": (
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_critic/sma_mean.csv",
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_critic/sma_std.csv"
         )
     }
-    # agents = {
-    #     RANDOM_AGENT: (
-    #         f"{base_dir}/RANDOM/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/RANDOM/{SMA_STD_FILE}",
-    #     ),
-    #     "SAC": (
-    #         f"{base_dir}/SAC/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/SAC/{SMA_STD_FILE}",
-    #     ),
-    #     "PPO": (
-    #         f"{base_dir}/PPO/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/PPO/{SMA_STD_FILE}",
-    #     ),
-    #     "TD3": (
-    #         f"{base_dir}/TD3/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/TD3/{SMA_STD_FILE}",
-    #     ),
-    #     "PPO_TD3 (weighted)": (
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_mean.csv",
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_std.csv"
-    #     ),
-    #     "PPO_SAC_TD3 (weighted)": (
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_mean.csv",
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_std.csv"
-    #     )
-    # }
 
     plot_results(agents, save_dir=save_dir)
 

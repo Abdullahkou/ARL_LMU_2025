@@ -4,6 +4,7 @@ import gymnasium
 import numpy as np
 from scipy.stats import mode
 from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
+import torch as th
 import pandas as pd
 from agents.baseAgent import AlgoConfig, IEnsemble
 from agents.models import RandomAgent
@@ -48,6 +49,7 @@ class EvalEnsemble(IEnsemble):
         self.env = config.get("env", gymnasium.make("CartPole-v1"))
 
         self.ensemble: list[Algorithm] = []
+        self.q_critics = []
         self.eval_csv = [
             ("PPO", f"{base_dir}/PPO/seeds/seed_0/training_results.csv"),
             ("SAC", f"{base_dir}/SAC/seeds/seed_0/training_results.csv"),
@@ -55,8 +57,13 @@ class EvalEnsemble(IEnsemble):
         ]
 
         self.perf_weights_dict = self.calculate_performance_weights(self.eval_csv)
-
+        self.active_idx = None
+        self.prev_action = None
+        self.switch_margin = 0.10  # required advantage to switch (in Q units)
+        self.inertia_lambda = 0.05  # penalize big action changes
         self.load()
+        self.q_norm = {"SAC": {"mu": 0.0, "sigma": 1.0}, "TD3": {"mu": 0.0, "sigma": 1.0}}  # running scale
+        self.norm_momentum = 0.01  # EW moving average for normalization
 
     def load(self, _: str = "") -> None:
         """
@@ -71,11 +78,72 @@ class EvalEnsemble(IEnsemble):
             algo.set_random_seed(self.seed)
             self.ensemble.append(algo)
 
+            if algo_name == "SAC":
+                self.q_critics.append(self._sac_q)
+            elif algo_name == "TD3":
+                self.q_critics.append(self._td3_q)
+            elif algo_name == "PPO":
+                self.q_critics.append(self.ppo_logprob)
+
+    def _make_q_scorer(self, model) -> Optional[Callable[[np.ndarray, np.ndarray], float]]:
+        """
+        Return a callable that scores (obs, act) with the model's Q-critics.
+        For SAC/TD3/DDPG this tries, in order:
+          - policy.qf1/qf2
+          - policy.critic (returns (q1,q2) or q)
+          - policy.q_net (single Q)
+        Aggregation: return the MIN across all available Q heads (pessimistic).
+        For PPO/A2C/DQN (no action-conditional Q), returns None.
+        """
+        policy = model.policy
+        policy.eval()  # ensure eval mode
+        has_q = False
+
+        # Prepare the forwarders we find
+        q_forwarders = []
+
+        # Case 1: separate qf1/qf2 modules (common in SAC, sometimes TD3/DDPG)
+        for attr in ("qf1", "qf2"):
+            if hasattr(policy, attr):
+                m = getattr(policy, attr)
+                if callable(m):
+                    has_q = True
+                    q_forwarders.append(lambda obs, act, m=m: m(obs, act))
+
+        # Case 2: a 'critic' module whose forward returns q or (q1, q2)
+        if hasattr(policy, "critic"):
+            m = policy.critic
+            if callable(m):
+                has_q = True
+
+                def critic_forward(obs, act, m=m):
+                    out = m(obs, act)
+                    if isinstance(out, tuple) or isinstance(out, list):
+                        return out  # (q1, q2, ...)
+                    return (out,)  # single q
+
+                q_forwarders.append(lambda obs, act, f=critic_forward: f(obs, act))
+
+        # Case 3: a single q_net that takes concatenated [obs, act]
+        if hasattr(policy, "q_net"):
+            m = getattr(policy, "q_net")
+            if callable(m):
+                has_q = True
+
+                def qnet_forward(obs, act, m=m):
+                    x = th.cat([obs, act], dim=1)
+                    return (m(x),)
+
+                q_forwarders.append(qnet_forward)
+
+        if not has_q:
+            return None  # e.g., PPO/A2C/DQN
+
     def predict(
         self,
         obs: np.ndarray,
         deterministic: bool = False,
-        aggregation: str = "weighted",
+        aggregation: str = "critic",
     ) -> np.ndarray:
         """
         Predict the action to take given an observation using majority voting for discrete
@@ -86,7 +154,6 @@ class EvalEnsemble(IEnsemble):
          action to take
         :param aggregation: method to aggregate actions ('mean' or 'weighted' or "performance")
         """
-
         predictions = [algo.predict(obs, deterministic)[0] for algo in self.ensemble]
 
         if self.is_discrete:
@@ -120,8 +187,50 @@ class EvalEnsemble(IEnsemble):
             weighted_action = np.average(predictions, axis=0, weights=perf_weights)
             return weighted_action
 
+        elif aggregation == "critic":
+            # collect models in the same order as predictions
+            models = [m for m in self.ensemble]  # SAC, TD3, PPO (maybe)
+            scores = []
+
+            for model, a in zip(models, predictions):
+                if isinstance(model, SAC):
+                    raw = self._sac_q(model, obs, a);
+                    self._update_norm("SAC", raw)
+                    scores.append(self._z("SAC", raw))
+                elif isinstance(model, TD3):
+                    raw = self._td3_q(model, obs, a);
+                    self._update_norm("TD3", raw)
+                    scores.append(self._z("TD3", raw))
+                else:
+                    # PPO has no Q(s,a); either skip or give a tiny prior
+                    scores.append(-np.inf)  # skip for now
+
+            scores = np.array(scores, dtype=float)
+
+            # Stabilizers (optional but recommended)
+            if getattr(self, "prev_action", None) is not None:
+                inertia_lambda = getattr(self, "inertia_lambda", 0.05)
+                deltas = np.linalg.norm(predictions - self.prev_action, axis=1)
+                scores -= inertia_lambda * deltas
+
+            best_idx = int(np.argmax(scores))
+
+            # hysteresis: only switch if clearly better
+            margin = getattr(self, "switch_margin", 0.10)
+            if getattr(self, "active_idx", None) is None:
+                self.active_idx = best_idx
+            else:
+                if scores[best_idx] >= scores[self.active_idx] + margin:
+                    self.active_idx = best_idx
+
+            a = predictions[self.active_idx]
+            self.prev_action = a
+            return a
+
         else:
             raise ValueError(f"Unknown aggregation method: {aggregation}")
+
+
 
     def learn(
         self,
@@ -157,3 +266,47 @@ class EvalEnsemble(IEnsemble):
 
         name_to_weight_map = dict(zip(model_names, weights))
         return name_to_weight_map
+
+    def _sac_q(self, sac_model, obs, act) -> float:
+        with th.inference_mode():
+            obs_t, _ = sac_model.policy.obs_to_tensor(obs)
+            act_t = th.as_tensor(act, device=obs_t.device).float()
+            if act_t.ndim == 1: act_t = act_t.unsqueeze(0)
+            q1, q2 = sac_model.policy.critic(obs_t, act_t)
+            qmin = th.minimum(q1.view(q1.size(0), -1), q2.view(q2.size(0), -1))
+            return float(qmin[0, 0].item())
+
+    def _td3_q(self, td3_model, obs, act) -> float:
+        with th.inference_mode():
+            obs_t, _ = td3_model.policy.obs_to_tensor(obs)
+            act_t = th.as_tensor(act, device=obs_t.device).float()
+            if act_t.ndim == 1: act_t = act_t.unsqueeze(0)
+            try:
+                q1, q2 = td3_model.policy.critic(obs_t, act_t)
+            except TypeError:
+                q1 = td3_model.policy.critic.q1_forward(obs_t, act_t)
+                q2 = td3_model.policy.critic.q2_forward(obs_t, act_t)
+            qmin = th.minimum(q1.view(q1.size(0), -1), q2.view(q2.size(0), -1))
+            return float(qmin[0, 0].item())
+
+    def ppo_logprob(self, ppo, obs_np: np.ndarray, act_np: np.ndarray) -> float:
+        with th.inference_mode():
+            obs = th.as_tensor(obs_np, device=self.device, dtype=th.float32)
+            act = th.as_tensor(act_np, device=self.device, dtype=th.float32)
+            if obs.ndim == 1:  obs = obs.unsqueeze(0)
+            if act.ndim == 1:  act = act.unsqueeze(0)
+            # evaluate_actions returns (values, log_prob, entropy)
+            values, log_prob, entropy = ppo.policy.evaluate_actions(obs, act)
+            return float(log_prob.view(-1)[0].item())
+
+    def _update_norm(self, key: str, x: float) -> None:
+        mu = self.q_norm[key]["mu"];
+        sg = self.q_norm[key]["sigma"]
+        mu_new = (1 - self.norm_momentum) * mu + self.norm_momentum * x
+        # simple EW std update around new mean
+        sg_new = (1 - self.norm_momentum) * sg + self.norm_momentum * abs(x - mu_new)
+        self.q_norm[key]["mu"], self.q_norm[key]["sigma"] = mu_new, max(sg_new, 1e-6)
+
+    def _z(self, key: str, x: float) -> float:
+        mu, sg = self.q_norm[key]["mu"], self.q_norm[key]["sigma"]
+        return (x - mu) / sg
