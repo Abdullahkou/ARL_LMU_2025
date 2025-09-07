@@ -22,6 +22,8 @@ STATE_DISCREPANCY_FILE = "state_dis.csv"
 
 TRAIN_DIR = "train"
 EVAL_DIR = "eval"
+ACTION_DIS_DIR = "action_disagreement"
+STATE_DIS_DIR = "state_discrepancy"
 
 MODELS_DIR = "models"
 SEEDS_DIR = "seeds"
