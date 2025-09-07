@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -12,7 +11,7 @@ from utils.logging import REWARD, STEPS
 def plot_results(
     agents_to_plot: dict[str, tuple[str, str | None]],
     save_dir: str,
-    interval_x_axis: Optional[int] = 5,
+    interval_x_axis: int | None = 5,
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)

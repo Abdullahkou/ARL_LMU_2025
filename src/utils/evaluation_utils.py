@@ -5,7 +5,12 @@ import numpy as np
 import pandas as pd
 
 
-def evaluate_across_val_seeds(env_id: str, validate_models_list: list[(str, type)], validate_seeds_list: list[int], save_dir: str):
+def evaluate_across_val_seeds(
+    env_id: str,
+    validate_models_list: list[(str, type)],
+    validate_seeds_list: list[int],
+    save_dir: str,
+):
     env = gym.make(env_id)
 
     save_file_name = f"{save_dir}/models_record.csv"
@@ -16,23 +21,21 @@ def evaluate_across_val_seeds(env_id: str, validate_models_list: list[(str, type
     else:
         df = pd.DataFrame(columns=["algo_name", "val_mean"])
 
-
-    print(f"Starte Bewertung der Modelle!")
+    print("Starte Bewertung der Modelle!")
     for model_name, model in validate_models_list:
         seeds_result = []
         for seed in validate_seeds_list:
-
             obs, _ = env.reset(seed=seed)
             done = truncated = False
             rewards = 0
             while not (done or truncated):
                 action, _ = model.predict(obs, deterministic=True)
                 obs, reward, done, truncated, _ = env.step(action)
-                rewards += reward 
+                rewards += reward
 
             seeds_result.append(rewards)
             env.close()
-        
+
         val_mean = np.mean(seeds_result)
 
         # Update, falls Algo schon existiert
@@ -43,7 +46,6 @@ def evaluate_across_val_seeds(env_id: str, validate_models_list: list[(str, type
             #             ignore_index=True)
             df.loc[len(df)] = {"algo_name": model_name, "val_mean": val_mean}
 
-            
     # Überschreiben (immer aktuelle Version)
     df.to_csv(save_file_name, index=False)
     return df
@@ -57,7 +59,7 @@ def build_homogeneous(valid_df: type, top_k):
     top_k = (
         valid_df.sort_values("val_mean", ascending=False)
         .groupby("algo_base", group_keys=False)
-        .head(top_k)  
+        .head(top_k)
     )
 
     print("\n############################################################")
@@ -76,7 +78,8 @@ def build_homogeneous(valid_df: type, top_k):
         homogeneous_list.append(entries)
     return homogeneous_list
 
-def build_heterogeneous(homogeneous_list:type):
+
+def build_heterogeneous(homogeneous_list: type):
     heterogeneous_list = []
 
     for group in homogeneous_list:

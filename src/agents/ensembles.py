@@ -1,3 +1,4 @@
+from itertools import combinations
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeAlias
 
 import gymnasium
@@ -9,6 +10,7 @@ from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
 from agents.baseAgent import AlgoConfig, IEnsemble
 from agents.models import RandomAgent
 from tuning.training_config import RANDOM_AGENT
+from utils.logging import mix_rbf_mmsd
 
 Algorithm: TypeAlias = PPO | DDPG | DQN | SAC | TD3 | A2C | RandomAgent
 
@@ -47,6 +49,8 @@ class EvalEnsemble(IEnsemble):
         self.seed = config.get("seed", 69)
         self.is_discrete = config.get("is_discrete", False)
         self.env = config.get("env", gymnasium.make("CartPole-v1"))
+
+        self.is_homogeneous = len(set(self.algos)) != len(self.algos)
 
         self.ensemble: list[Algorithm] = []
         self.eval_csv = [
@@ -158,3 +162,127 @@ class EvalEnsemble(IEnsemble):
 
         name_to_weight_map = dict(zip(model_names, weights))
         return name_to_weight_map
+
+    def collect_individual_rollouts(self, envs: list[gymnasium.Env], n_steps=1_000):
+        states_per_model = list[np.ndarray]()
+        for i, m in enumerate(self.ensemble):
+            env = envs[i]
+            s = collect_rollouts(m, env, n_steps=n_steps)
+
+            states_per_model.append(s)
+
+        return states_per_model
+
+    def action_disagreement(
+        self, states_per_model: list[np.ndarray], max_actions=5_000
+    ):
+        """
+        Computes total action disagreement across models at given states.
+        Limits MMDS calc to ``max_actions`` samples for efficiency.
+
+        :param states: [(n_states, obs_dim),...] list of states per model
+        :return:
+            :dict with:
+                {
+                'total': mean across all results,
+                'pairwise': { "model_a-model_b": distance, ... }
+                }
+        """
+        stacked_states = np.vstack(states_per_model)
+
+        actions_per_model = list[np.ndarray]()
+        for m in self.ensemble:
+            actions, _ = m.predict(
+                stacked_states,
+                deterministic=True,
+            )
+
+            actions_per_model.append(actions)
+
+        subsampled_actions = actions_per_model
+        if len(actions_per_model[0]) > max_actions:
+            indices = np.random.choice(
+                len(actions_per_model[0]), size=max_actions, replace=False
+            )
+            subsampled_actions = [a[indices] for a in actions_per_model]
+
+        action_dis = self.__mmds_results(subsampled_actions)
+
+        return action_dis
+
+    def state_visit_divergence(
+        self, states_per_model: list[np.ndarray], max_states=5_000
+    ):
+        """
+        Computes total state divergence across models and given states.
+        Limits MMDS calc to ``max_states`` samples for efficiency.
+
+        :param states: [(n_states, obs_dim),...] list of states per model
+        :return:
+            :dict with:
+                {
+                'total': mean across all results,
+                'pairwise': { "model_a-model_b": distance, ... }
+                }
+        """
+        subsampled_states = states_per_model
+        if len(states_per_model[0]) > max_states:
+            indices = np.random.choice(
+                len(states_per_model[0]), size=max_states, replace=False
+            )
+            subsampled_states = [s[indices] for s in states_per_model]
+
+        state_dis = self.__mmds_results(subsampled_states)
+
+        return state_dis
+
+    def __mmds_results(self, arrays_per_model: list[np.ndarray]):
+        """
+        Computes pairwise MMD^2 between array results from models in the ensemble.
+
+        :param arrays_per_model: list of arrays per model
+        :return:
+            :dict with:
+                {
+                'total': mean across all results,
+                'pairwise': { "model_a-model_b": distance, ... }
+                }
+        """
+        pairwise = {}
+        for i, j in combinations(range(len(arrays_per_model)), 2):
+            mmd = mix_rbf_mmsd(arrays_per_model[i], arrays_per_model[j])
+
+            model_a = self.ensemble[i].__class__.__name__
+            model_b = self.ensemble[j].__class__.__name__
+            pairwise[f"{model_a}-{model_b}"] = mmd
+
+        total_state_dis = np.mean(list(pairwise.values()))
+
+        results: dict[str, np.floating | dict[str, np.floating]] = {
+            "total": total_state_dis,
+            "pairwise": pairwise,
+        }
+
+        return results
+
+
+def collect_rollouts(model: Algorithm, env: gymnasium.Env, n_steps=1000):
+    """Rolls out episodes to collect visited states."""
+    states = []
+    steps = 0
+    while steps < n_steps:
+        state: np.ndarray
+        state, _ = env.reset()
+        done = False
+        while not done:
+            action, _ = model.predict(state)
+            state, _, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+
+            steps += 1
+            states.append(state)
+
+            if steps >= n_steps:
+                break
+
+    return np.array(states)

@@ -17,9 +17,13 @@ MEAN_FILE = "mean.csv"
 SMA_MEAN_FILE = "sma_mean.csv"
 STD_FILE = "std.csv"
 SMA_STD_FILE = "sma_std.csv"
+ACTION_DISAGREEMENT_FILE = "act_dis.csv"
+STATE_DISCREPANCY_FILE = "state_dis.csv"
 
 TRAIN_DIR = "train"
 EVAL_DIR = "eval"
+ACTION_DIS_DIR = "action_disagreement"
+STATE_DIS_DIR = "state_discrepancy"
 
 MODELS_DIR = "models"
 SEEDS_DIR = "seeds"
