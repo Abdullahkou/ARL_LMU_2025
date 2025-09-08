@@ -35,10 +35,11 @@ def plot_results(
             x_vals = mean_df.index.values
 
     x_label = "Training Steps"
+    plt.rcParams["figure.figsize"] = (12, 7)  # width, height in inches
 
     for col_name, title, file_name in [
-        (STEPS, "Steps", "steps_3_critic.png"),
-        (REWARD, "Reward", "reward_3_critic.png"),
+        (STEPS, "Steps", "steps_td3_sac_critic.png"),
+        (REWARD, "Reward", "reward_td3_sac_critic.png"),
     ]:
         plt.margins(x=0)
         plt.title(title)
@@ -110,13 +111,13 @@ def main():
             f"{base_dir}/TD3/{SMA_MEAN_FILE}",
             f"{base_dir}/TD3/{SMA_STD_FILE}",
         ),
-        "PPO_SAC_TD3 (mean)": (
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean/sma_mean.csv",
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_mean/sma_std.csv"
-        ),
-        "PPO_SAC_TD3 (critic)": (
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_critic/sma_mean.csv",
-            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_critic/sma_std.csv"
+        #"PPO_SAC_TD3 (critic)": (
+        #    f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_critic/sma_mean.csv",
+        #    f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_critic/sma_std.csv"
+        #),
+        "SAC_TD3 (critic)": (
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_SAC_TD3_critic/sma_mean.csv",
+            f"results/test/Walker2d-v5/1.5M/eval/checkpoints_SAC_TD3_critic/sma_std.csv"
         )
     }
 

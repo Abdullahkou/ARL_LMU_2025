@@ -62,7 +62,13 @@ class EvalEnsemble(IEnsemble):
         self.switch_margin = 0.10  # required advantage to switch (in Q units)
         self.inertia_lambda = 0.05  # penalize big action changes
         self.load()
-        self.q_norm = {"SAC": {"mu": 0.0, "sigma": 1.0}, "TD3": {"mu": 0.0, "sigma": 1.0}}  # running scale
+        self.q_norm = {
+            "SAC": {"mu": 0.0, "sigma": 1.0},
+            "TD3": {"mu": 0.0, "sigma": 1.0},
+            "PPO": {"mu": 0.0, "sigma": 1.0}
+        }
+        self.ppo_w_logp = 1.0  # main signal
+        self.ppo_w_v = 0.05  # very small bonus from V(s), can start at 0.0
         self.norm_momentum = 0.01  # EW moving average for normalization
 
     def load(self, _: str = "") -> None:
@@ -83,7 +89,7 @@ class EvalEnsemble(IEnsemble):
             elif algo_name == "TD3":
                 self.q_critics.append(self._td3_q)
             elif algo_name == "PPO":
-                self.q_critics.append(self.ppo_logprob)
+                self.q_critics.append(self._ppo_score_V)
 
     def _make_q_scorer(self, model) -> Optional[Callable[[np.ndarray, np.ndarray], float]]:
         """
@@ -188,40 +194,43 @@ class EvalEnsemble(IEnsemble):
             return weighted_action
 
         elif aggregation == "critic":
-            # collect models in the same order as predictions
-            models = [m for m in self.ensemble]  # SAC, TD3, PPO (maybe)
+            # models in same order as predictions
+            models = [m for m in self.ensemble]  # e.g., [SAC, TD3, PPO]
             scores = []
 
             for model, a in zip(models, predictions):
                 if isinstance(model, SAC):
-                    raw = self._sac_q(model, obs, a);
-                    self._update_norm("SAC", raw)
+                    raw = self._sac_q(model, obs, a)  # returns min(Q1,Q2)
+                    #self._update_norm("SAC", raw)
                     scores.append(self._z("SAC", raw))
                 elif isinstance(model, TD3):
-                    raw = self._td3_q(model, obs, a);
-                    self._update_norm("TD3", raw)
+                    raw = self._td3_q(model, obs, a)  # returns min(Q1,Q2)
+                    #self._update_norm("TD3", raw)
                     scores.append(self._z("TD3", raw))
+                elif isinstance(model, PPO):
+                    raw = self._ppo_score_V(model, obs)  # logp (+ tiny V)
+                    #self._update_norm("PPO", raw)
+                    scores.append(self._z("PPO", raw))
                 else:
-                    # PPO has no Q(s,a); either skip or give a tiny prior
-                    scores.append(-np.inf)  # skip for now
+                    scores.append(-np.inf)  # unknown model type → ignore
 
-            scores = np.array(scores, dtype=float)
+            scores = np.asarray(scores, dtype=float)
 
-            # Stabilizers (optional but recommended)
+            # optional stabilizers
             if getattr(self, "prev_action", None) is not None:
-                inertia_lambda = getattr(self, "inertia_lambda", 0.05)
+                inertia_lambda = getattr(self, "inertia_lambda", 0.05)  # try 0.02–0.1
                 deltas = np.linalg.norm(predictions - self.prev_action, axis=1)
                 scores -= inertia_lambda * deltas
 
-            best_idx = int(np.argmax(scores))
+            candidate_idx = int(np.argmax(scores))
 
-            # hysteresis: only switch if clearly better
-            margin = getattr(self, "switch_margin", 0.10)
+            # hysteresis to avoid flip-flopping
+            margin = getattr(self, "switch_margin", 0.10)  # in z-score units
             if getattr(self, "active_idx", None) is None:
-                self.active_idx = best_idx
+                self.active_idx = candidate_idx
             else:
-                if scores[best_idx] >= scores[self.active_idx] + margin:
-                    self.active_idx = best_idx
+                if scores[candidate_idx] >= scores[self.active_idx] + margin:
+                    self.active_idx = candidate_idx
 
             a = predictions[self.active_idx]
             self.prev_action = a
@@ -289,18 +298,31 @@ class EvalEnsemble(IEnsemble):
             qmin = th.minimum(q1.view(q1.size(0), -1), q2.view(q2.size(0), -1))
             return float(qmin[0, 0].item())
 
-    def ppo_logprob(self, ppo, obs_np: np.ndarray, act_np: np.ndarray) -> float:
-        with th.inference_mode():
-            obs = th.as_tensor(obs_np, device=self.device, dtype=th.float32)
-            act = th.as_tensor(act_np, device=self.device, dtype=th.float32)
-            if obs.ndim == 1:  obs = obs.unsqueeze(0)
-            if act.ndim == 1:  act = act.unsqueeze(0)
-            # evaluate_actions returns (values, log_prob, entropy)
-            values, log_prob, entropy = ppo.policy.evaluate_actions(obs, act)
-            return float(log_prob.view(-1)[0].item())
+    @th.inference_mode()
+    def _ppo_score(self, ppo_model: PPO, obs: np.ndarray, act: np.ndarray) -> float:
+        """
+        PPO self-score for its own action: w_logp * log pi(a|s) + w_v * V(s).
+        """
+        obs_t, _ = ppo_model.policy.obs_to_tensor(obs)  # SB3's preprocessing/device
+        act_t = th.as_tensor(act, device=obs_t.device, dtype=th.float32)
+        if act_t.ndim == 1:
+            act_t = act_t.unsqueeze(0)
+
+        # evaluate_actions returns (values, log_prob, entropy)
+        values, log_prob, _ = ppo_model.policy.evaluate_actions(obs_t, act_t)
+
+        # normalize shapes and build scalar
+        lp = float(log_prob.view(-1)[0].item())
+        v = float(values.view(-1)[0].item())
+        return self.ppo_w_logp * lp + self.ppo_w_v * v
+
+    def _ppo_score_V(self, ppo_model, obs):
+        obs_t, _ = ppo_model.policy.obs_to_tensor(obs)
+        v = ppo_model.policy.predict_values(obs_t)  # (B,1)
+        return float(v.view(-1)[0].item())
 
     def _update_norm(self, key: str, x: float) -> None:
-        mu = self.q_norm[key]["mu"];
+        mu = self.q_norm[key]["mu"]
         sg = self.q_norm[key]["sigma"]
         mu_new = (1 - self.norm_momentum) * mu + self.norm_momentum * x
         # simple EW std update around new mean

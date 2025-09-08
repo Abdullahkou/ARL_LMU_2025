@@ -75,7 +75,7 @@ def evaluate_checkpoints():
             print(f"Evaluating ensemble for seed {seed} checkpoint {i}")
             eval_env.reset(seed=eval_env_seed)
             algos = [
-                ("PPO", f"{base_dir}/PPO/seeds/seed_{seed}/checkpoint_{i}.zip"),
+                #("PPO", f"{base_dir}/PPO/seeds/seed_{seed}/checkpoint_{i}.zip"),
                 ("SAC", f"{base_dir}/SAC/seeds/seed_{seed}/checkpoint_{i}.zip"),
                 ("TD3", f"{base_dir}/TD3/seeds/seed_{seed}/checkpoint_{i}.zip"),
             ]
