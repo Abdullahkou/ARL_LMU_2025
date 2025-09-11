@@ -26,11 +26,11 @@ def train(
     base_dir: str,
     training_args: dict[str, Any]
     | None = None,  # To override any args from the train_config
-    record_training=True,
     use_rendering=False,
     save_checkpoints=False,
     save_intermediate_results=False,
     device="cpu",
+    save_postfix="",
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
@@ -45,15 +45,18 @@ def train(
     )
 
     steps_dir = parse_steps(total_steps=total_steps)
-    model_dir = (
-        f"{base_dir}/{env_id}/{steps_dir}/{model_name}{training_args['save_postfix']}"
-    )
+    model_dir = f"{base_dir}/{env_id}/{steps_dir}/{model_name}{save_postfix}"
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases
 
+    train_log_phases = training_config.train_log_phases
+    log_interval = None
+    if training_config.record_training:
+        log_interval = total_steps // train_log_phases
+
     # the first training step is always evaluated/included
-    eval_step_intervals = [i * eval_schedule for i in range(0, eval_phases + 1)]
+    eval_step_intervals = [i * eval_schedule for i in range(eval_phases + 1)]
 
     seeds_validation_results = list[np.ndarray]()
     seeds_training_results = list[np.ndarray]()
@@ -65,11 +68,13 @@ def train(
 
             train_env_factory = partial(
                 make_gym,
-                env_id=training_config.env_id,
+                env_id=training_config.env_id.value,
                 seed=training_config.train_env_seed,
             )
 
-            eval_env = gym.make(env_id, render_mode="rgb_array")
+            eval_env = gym.make(
+                env_id.value, render_mode="rgb_array" if use_rendering else None
+            )
             eval_env.reset(seed=training_config.eval_env_seed)
 
             agent = WrapperAgent(
@@ -108,8 +113,11 @@ def train(
             training_results_file = f"{seed_result_dir}/{TRAINING_RESULTS_FILE}"
 
             train_logger = None
-            if record_training:
-                train_logger = TrainLogger(training_results_file)
+            if training_config.record_training:
+                log_interval = total_steps // train_log_phases
+                train_logger = TrainLogger(
+                    training_results_file, log_interval=log_interval
+                )
 
             agent.learn(
                 total_steps=total_steps, eval_fn=training_fn, train_logger=train_logger
@@ -119,7 +127,7 @@ def train(
             if not os.path.exists(agent_model_dir):
                 os.makedirs(agent_model_dir)
 
-            agent.save(algo_name=model_name, path=f"{agent_model_dir}/seed_{seed}")
+            agent.save(path=f"{agent_model_dir}/seed_{seed}")
 
             if train_logger is not None:
                 trainig_results = train_logger.get_training_results()
@@ -137,10 +145,14 @@ def train(
         )
 
         if len(seeds_training_results) > 0:
+            training_step_intervals = [
+                i * log_interval for i in range(train_log_phases + 1)
+            ]
+
             save_seed_totals(
                 seeds_results=seeds_training_results,
                 dir=f"{model_dir}/{TRAINING_RESULTS_DIR}",
-                step_intervals=eval_step_intervals,
+                step_intervals=training_step_intervals,
                 columns=TRAINING_COLS,
             )
 
@@ -176,7 +188,7 @@ def main():
     # device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # TODO:
-    # save_postfix = args.save_postfix
+    save_postfix = ""  # args.save_postfix
     # if save_postfix != "":
     #     save_postfix = f"_{save_postfix}"
     training_args = None
@@ -187,11 +199,11 @@ def main():
     train(
         base_dir=base_dir,
         training_args=training_args,
-        record_training=True,
         use_rendering=False,
         save_checkpoints=False,
         save_intermediate_results=False,
         device=device,
+        save_postfix=save_postfix,
     )
 
 

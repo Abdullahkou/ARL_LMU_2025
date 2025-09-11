@@ -1,0 +1,17 @@
+algo_config:
+    algorithm: RANDOM
+    ensemble_aggregation: avg
+    hyper_params: {}
+    ignore_hyper_params: false
+    num_agents: 1
+    num_q_networks: 1
+env_id: LunarLander-v3
+eval_env_seed: 3
+eval_episodes: 20
+eval_phases: 20
+seeds:
+- 0
+- 1
+- 2
+steps: 100000
+train_env_seed: 2

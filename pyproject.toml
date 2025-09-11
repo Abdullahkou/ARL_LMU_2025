@@ -5,10 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11, <3.13"
 dependencies = [
-    "gymnasium[classic-control,mujoco]>=1.2.0",
+    "gymnasium[box2d,classic-control,mujoco]>=1.2.0",
     "pygame>=2.6.1",
     "pyyaml>=6.0.2",
     "scipy>=1.16.1",
     "shimmy>=2.0",
     "stable-baselines3>=2.7.0",
+    "swig>=4.3.1.post0",
 ]

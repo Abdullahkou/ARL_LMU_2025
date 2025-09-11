@@ -21,12 +21,13 @@ EVAL_COLS = [
     REWARD,
 ]
 
-TRAINING_COLS = [STEPS, REWARD, TD_ERROR]
+TRAINING_COLS = [REWARD, TD_ERROR]
 
 
 class TrainLogger:
-    def __init__(self, save_file: str):
-        self.eps = 0
+    def __init__(self, save_file: str, log_interval=100):
+        self.steps = 0
+        self.log_interval = log_interval
         self.episode_results: list[tuple[float, float, float]] = []
         self.__reset()
 
@@ -37,18 +38,19 @@ class TrainLogger:
             writer.writerow([TRAINING_STEP_COL] + TRAINING_COLS)
 
     def __reset(self):
-        self.steps = 0
         self.reward = 0.0
         self.td_error = 0.0
 
     def log_step(self, reward: float, td_error: float):
+        if self.steps % self.log_interval == 0:
+            self.__save_bulk(self.steps)
+
         self.steps += 1
         self.reward += reward
         self.td_error += td_error
 
-    def log_episode(self, current_training_step: int):
-        self.eps += 1
-        result = (self.steps, self.reward, self.td_error)
+    def __save_bulk(self, current_training_step: int):
+        result = (self.reward, self.td_error)
 
         self.episode_results.append(result)
 

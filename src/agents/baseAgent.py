@@ -78,11 +78,10 @@ class WrapperAgent:
         self.agent: IAgent | RandomAgent = None
         match config.algorithm:
             case Algorithm.RANDOM:
-                train_env = train_env_factory()
                 self.agent = RandomAgent(
                     seed=seed,
-                    action_space=train_env.action_space,
-                    eval_step_intervals=eval_step_intervals,
+                    train_env_factory=train_env_factory,
+                    eval_schedule=eval_step_intervals,
                 )
             case Algorithm.DQN:
                 # TODO:
@@ -101,12 +100,9 @@ class WrapperAgent:
         :param (optional) eval_fn: evaluation fn to call during learning
         """
 
-        if isinstance(self.agent, RandomAgent):
-            self.agent.learn(eval_fn=eval_fn)
-        else:
-            self.agent.learn(
-                total_steps=total_steps, eval_fn=eval_fn, train_logger=train_logger
-            )
+        self.agent.learn(
+            total_steps=total_steps, eval_fn=eval_fn, train_logger=train_logger
+        )
 
     def predict(self, obs: np.ndarray, deterministic=True):
         """
