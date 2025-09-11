@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from tuning.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE, TRAIN_DIR
+from config.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE
 from utils.logging import REWARD, STEPS
 
 
@@ -83,7 +83,7 @@ def plot_results(
 
 
 def main():
-    base_dir = f"results/test/Walker2d-v5/1.0M/{TRAIN_DIR}"
+    base_dir = "results/test/Walker2d-v5/1.0M"
     save_dir = f"{base_dir}/_plots"
 
     agents = {
@@ -92,32 +92,6 @@ def main():
             f"{base_dir}/PPO/{SMA_STD_FILE}",
         )
     }
-    # agents = {
-    #     RANDOM_AGENT: (
-    #         f"{base_dir}/RANDOM/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/RANDOM/{SMA_STD_FILE}",
-    #     ),
-    #     "SAC": (
-    #         f"{base_dir}/SAC/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/SAC/{SMA_STD_FILE}",
-    #     ),
-    #     "PPO": (
-    #         f"{base_dir}/PPO/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/PPO/{SMA_STD_FILE}",
-    #     ),
-    #     "TD3": (
-    #         f"{base_dir}/TD3/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/TD3/{SMA_STD_FILE}",
-    #     ),
-    #     "PPO_TD3 (weighted)": (
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_mean.csv",
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_std.csv"
-    #     ),
-    #     "PPO_SAC_TD3 (weighted)": (
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_mean.csv",
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_std.csv"
-    #     )
-    # }
 
     plot_results(agents, save_dir=save_dir)
 

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-from tuning.training_config import MEAN_FILE, SMA_MEAN_FILE, SMA_STD_FILE, STD_FILE
+from config.training_config import MEAN_FILE, SMA_MEAN_FILE, SMA_STD_FILE, STD_FILE
 
 TRAINING_STEP_COL = "Training Step"
 EVAL_EP_COL = "Evaluation Episode"
@@ -14,14 +14,53 @@ EVAL_EP_COL = "Evaluation Episode"
 # ep col names
 STEPS = "Steps"
 REWARD = "Reward"
+TD_ERROR = "TD ERROR"
 
 EVAL_COLS = [
     STEPS,
     REWARD,
 ]
 
-TOTAL_ACTION_DIS_COL = "total action disagreement"
-TOTAL_STATE_DIS_COL = "total state discrepancy"
+TRAINING_COLS = [STEPS, REWARD, TD_ERROR]
+
+
+class TrainLogger:
+    def __init__(self, save_file: str):
+        self.eps = 0
+        self.episode_results: list[tuple[float, float, float]] = []
+        self.__reset()
+
+        self.save_file = save_file
+
+        with open(save_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([TRAINING_STEP_COL] + TRAINING_COLS)
+
+    def __reset(self):
+        self.steps = 0
+        self.reward = 0.0
+        self.td_error = 0.0
+
+    def log_step(self, reward: float, td_error: float):
+        self.steps += 1
+        self.reward += reward
+        self.td_error += td_error
+
+    def log_episode(self, current_training_step: int):
+        self.eps += 1
+        result = (self.steps, self.reward, self.td_error)
+
+        self.episode_results.append(result)
+
+        with open(self.save_file, "a", newline="") as f:
+            writer = csv.writer(f)
+            row = (current_training_step,) + result
+            writer.writerow(row)
+
+        self.__reset()
+
+    def get_training_results(self):
+        return self.episode_results
 
 
 class EpisodeLogger:
@@ -67,34 +106,32 @@ class EpisodeLogger:
 
 def save_seed_totals(
     seeds_results: list[np.ndarray],
-    model_dir: str,
-    interval_steps: list[int],
+    dir: str,
+    step_intervals: list[int],
     save_rolling=True,
-    columns=EVAL_COLS,
+    columns: list[str] = EVAL_COLS,
     index_name=TRAINING_STEP_COL,
 ):
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
     mean = np.nanmean(seeds_results, axis=0)
-    mean_df = pd.DataFrame(mean, columns=columns, index=interval_steps)
+    mean_df = pd.DataFrame(mean, columns=columns, index=step_intervals)
     mean_df.index.name = index_name
-    mean_df.to_csv(f"{model_dir}/{MEAN_FILE}", index=True)
+    mean_df.to_csv(f"{dir}/{MEAN_FILE}", index=True)
 
     if save_rolling:
         save_rolling_avg(
-            mean_df, f"{model_dir}/{SMA_MEAN_FILE}", window_size=3, min_periods=1
+            mean_df, f"{dir}/{SMA_MEAN_FILE}", window_size=3, min_periods=1
         )
 
     std = np.nanstd(seeds_results, axis=0)
-    std_df = pd.DataFrame(std, columns=columns, index=interval_steps)
+    std_df = pd.DataFrame(std, columns=columns, index=step_intervals)
     std_df.index.name = index_name
-    std_df.to_csv(f"{model_dir}/{STD_FILE}", index=True)
+    std_df.to_csv(f"{dir}/{STD_FILE}", index=True)
 
     if save_rolling:
-        save_rolling_avg(
-            std_df, f"{model_dir}/{SMA_STD_FILE}", window_size=3, min_periods=1
-        )
+        save_rolling_avg(std_df, f"{dir}/{SMA_STD_FILE}", window_size=3, min_periods=1)
 
 
 def save_rolling_avg(df: DataFrame, file_name: str, window_size=3, min_periods=1):

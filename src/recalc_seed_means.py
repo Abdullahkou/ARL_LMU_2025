@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from tuning.training_config import (
+from config.training_config import (
     SEED_PREFIX,
     SEEDS_DIR,
     TRAINING_RESULTS_FILE,
@@ -34,13 +34,13 @@ def recalc_seed_means(model_dir):
 
     save_seed_totals(
         seeds_results=seed_results,
-        model_dir=model_dir,
-        interval_steps=eval_interval_steps,
+        dir=model_dir,
+        step_intervals=eval_interval_steps,
     )
 
 
 def main():
-    model_dir = "results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted"
+    model_dir = "results/test/Walker2d-v5/1.5M/RANDOM"
 
     recalc_seed_means(model_dir)
 

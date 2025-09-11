@@ -1,103 +1,40 @@
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Callable, Protocol
+from typing import Callable, Protocol
 
 import numpy as np
-from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
+from gymnasium import Env
 
-from agents.models import RandomAgent, SB3Callback
-from tuning.training_config import RANDOM_AGENT
-
-from torch import nn
-
-
-class Algo(Enum):
-    PPO = PPO
-    SAC = SAC
-    A2C = A2C
-    DQN = DQN
-    DDPG = DDPG
-    TD3 = TD3
-    RANDOM = RandomAgent
+from agents.randomAgent import RandomAgent
+from config.training_config import AlgoConfig, Algorithm
+from utils.logging import TrainLogger
 
 
-ppo_policy_kwargs = {
-    "activation_fn": nn.ReLU,
-    "net_arch": {
-        "pi": [512, 256, 128, 64],  # Eine tiefere Policy-Netzwerk-Architektur
-        "vf": [512, 256, 128, 64],  # Eine tiefere Wertfunktions-Netzwerk-Architektur
-    },
-}
-
-
-ALGO_IMPLS = {
-    "PPO": lambda env, seed, hyper_params={}: PPO(
-        # "MlpPolicy", env, seed=seed, **hyper_params, policy_kwargs=ppo_policy_kwargs
-        "MlpPolicy",
-        env,
-        seed=seed,
-        **hyper_params,
-    ),
-    "A2C": lambda env, seed, hyper_params={}: A2C(
-        "MlpPolicy", env, seed=seed, **hyper_params
-    ),
-    "DQN": lambda env, seed, hyper_params={}: DQN(
-        "MlpPolicy", env, seed=seed, **hyper_params
-    ),
-    "SAC": lambda env, seed, hyper_params={}: SAC(
-        "MlpPolicy", env, seed=seed, **hyper_params
-    ),
-    "DDPG": lambda env, seed, hyper_params={}: DDPG(
-        "MlpPolicy", env, seed=seed, **hyper_params
-    ),
-    "TD3": lambda env, seed, hyper_params={}: TD3(
-        "MlpPolicy", env, seed=seed, **hyper_params
-    ),
-    RANDOM_AGENT: lambda env, seed, hyper_params={}: RandomAgent(
-        action_space=env.action_space,
-        seed=seed,
-    ),
-}
-
-
-@dataclass
-class AlgoConfig:
-    """Configuration for a single algorithm."""
-
-    name: Algo
-    hyper_params: dict = field(default_factory=lambda: {})
-
-
-class IEnsemble(Protocol):
+class IAgent(Protocol):
     """Basic agent interface"""
 
     def __init__(
         self,
-        config: dict[str, Any | AlgoConfig | int | str],
+        config: AlgoConfig,
+        train_env_factory: Callable[[], Env],
+        seed: int = 69,
+        device: str = "cpu",
     ) -> None:
-        """Initialize the agent.
-
-        :param config: configuration dictionary: {...params}
-        """
-        # --------- config params ----------
-        # algos: list[AlgoConfig],
-        # train_env_id: str,
-        # training_results_dir: str | None = None,
-        # seed: int = 69,
-        # device: str = "cpu",
+        """Remember to close your train env constructed from factory at the end of learn!"""
         pass
 
     def learn(
         self,
         total_steps: int,
         eval_fn: Callable[[int], None] | None = None,
+        train_logger: TrainLogger | None = None,
         eval_schedule: int | None = None,
     ) -> None:
         """
         Learn for a certain number of steps optionally doing eval.
 
         :param total_steps: number of steps to learn
-        :param (optional) eval_fn: evaluation fn to call during learning
+        :param (optional) train_logger: useful for recording training stats
+        :param (optional) eval_fn: evaluation fn to call during learning, called at every step!
+        :param (optional) eval_schedule: eval interval, useful for multi agent setting!
         """
         pass
 
@@ -129,51 +66,49 @@ class IEnsemble(Protocol):
         pass
 
 
-class BaseAgent:
-    """Basic agent interface"""
-
+class WrapperAgent:
     def __init__(
         self,
-        algos: list[Algo],
-        train_env: Callable,
-        hyper_params: dict = {},
+        config: AlgoConfig,
+        train_env_factory: Callable[[], Env],
+        eval_step_intervals: list[int] = None,
         seed: int = 69,
         device: str = "cpu",
-    ) -> None:
-        """
-        Base ctor.
-        """
-        # Train Umgebung seeden
-        train_env.reset(seed=seed)
-
-        self.agents = None
-
-        builder = ALGO_IMPLS[algos[0]]
-        self.agents = builder(train_env, seed, hyper_params)
+    ):
+        self.agent: IAgent | RandomAgent = None
+        match config.algorithm:
+            case Algorithm.RANDOM:
+                train_env = train_env_factory()
+                self.agent = RandomAgent(
+                    seed=seed,
+                    action_space=train_env.action_space,
+                    eval_step_intervals=eval_step_intervals,
+                )
+            case Algorithm.DQN:
+                # TODO:
+                pass
 
     def learn(
         self,
         total_steps: int,
         eval_fn: Callable | None = None,
-        eval_schedule_list: list[int] = None,
-    ) -> None:
+        train_logger: TrainLogger | None = None,
+    ):
         """
-        Learn for a certain number of steps optionally doing eval.
+        Learn for a certain number of steps, optionally doing eval.
 
         :param total_steps: number of steps to learn
         :param (optional) eval_fn: evaluation fn to call during learning
         """
-        if eval_fn is not None:
-            if isinstance(self.agents, RandomAgent):
-                self.agents.eval_model = eval_fn
-                self.agents.learn(eval_schedule_list=eval_schedule_list)
-            else:
-                callback = SB3Callback(eval_model=eval_fn, total_timesteps=total_steps)
-                return self.agents.learn(
-                    total_steps, callback=callback, log_interval=None
-                )
 
-    def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
+        if isinstance(self.agent, RandomAgent):
+            self.agent.learn(eval_fn=eval_fn)
+        else:
+            self.agent.learn(
+                total_steps=total_steps, eval_fn=eval_fn, train_logger=train_logger
+            )
+
+    def predict(self, obs: np.ndarray, deterministic=True):
         """
         Predict the action to take given an observation.
 
@@ -181,31 +116,27 @@ class BaseAgent:
         :param deterministic: whether to use deterministic action selection
         :return: action to take
         """
-        if self.agents is not None:
-            action, _ = self.agents.predict(obs, deterministic=True)
+        action, _ = self.agent.predict(obs, deterministic=deterministic)
         return action
 
-    def save(self, algo_name: str, path: str) -> None:
+    def save(self, path: str):
         """
         Save the agent's state to a file.
 
-        :algo_name: name of the algorithm
         :param path: path to save the agent's state to
         """
-        if hasattr(self.agents, "save"):  # should cover Random
-            self.agents.save(path)
+        if isinstance(self.agent, RandomAgent):
+            return
 
-    def load(self, algo_name: str, path: str, env, action_space=None) -> None:
+        self.agent.save(path)
+
+    def load(self, path: str):
         """
         Load the agent's state from a file.
 
         :param path: path to load the agent's state from
         """
-        if algo_name in ["PPO", "A2C", "SAC", "TD3", "DDPG", "DQN"]:
-            # SB3-Loader
-            AlgoClass = getattr(__import__("stable_baselines3"), algo_name)
-            return AlgoClass.load(path + "_" + algo_name, env=env)
-        elif algo_name == RANDOM_AGENT:
-            return RandomAgent.load(path + "_" + algo_name, action_space)
-        else:
-            raise ValueError(f"Unbekannter Algorithmus: {algo_name}")
+        if isinstance(self.agent, RandomAgent):
+            return
+
+        self.agent.load(path)
