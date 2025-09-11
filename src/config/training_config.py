@@ -83,7 +83,7 @@ def make_gym(env_id: str, seed=42):
 
 class Algorithm(Enum):
     RANDOM = "RANDOM"
-    DQN = "DQN"
+    CUSTOM_DQN = "Custom_DQN"
 
 
 class Environments(Enum):

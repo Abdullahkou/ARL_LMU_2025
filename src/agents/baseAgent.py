@@ -83,7 +83,7 @@ class WrapperAgent:
                     train_env_factory=train_env_factory,
                     eval_schedule=eval_step_intervals,
                 )
-            case Algorithm.DQN:
+            case Algorithm.CUSTOM_DQN:
                 # TODO:
                 pass
 
