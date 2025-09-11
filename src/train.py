@@ -38,8 +38,8 @@ def train(
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
 
-    model_name = training_config.algo_config.algorithm
-    env_id = training_config.env_id
+    model_name = training_config.algo_config.algorithm.value
+    env_id = training_config.env_id.value
     print(
         f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | Hyperparams: "
     )
@@ -68,12 +68,12 @@ def train(
 
             train_env_factory = partial(
                 make_gym,
-                env_id=training_config.env_id.value,
+                env_id=env_id,
                 seed=training_config.train_env_seed,
             )
 
             eval_env = gym.make(
-                env_id.value, render_mode="rgb_array" if use_rendering else None
+                env_id, render_mode="rgb_array" if use_rendering else None
             )
             eval_env.reset(seed=training_config.eval_env_seed)
 
