@@ -95,9 +95,28 @@ class EnsembleAggregation(Enum):
     MAJ_VOTE = "maj_vote"
 
 
+from dataclasses import dataclass
+
+
 @dataclass
 class HyperParams:
-    pass
+    learning_rate: float = 3e-4
+    gamma: float = 0.99
+    buffer_size: int = 200_000
+    batch_size: int = 256
+    learning_starts: int = 5_000
+    train_freq: int = 1
+    gradient_steps: int = 1
+    target_update_interval: int = 1_000
+    tau: float = 1.0
+    max_epsilon: float = 1.0
+    min_epsilon: float = 0.05
+    epsilon_decay_steps: int = 250_000
+    clip_grad_norm: float = 10.0
+    double_q: bool = True
+    dueling: bool = False
+    n_q_heads: int = 5
+    hidden_sizes: tuple[int, ...] = (256, 256)
 
 
 @dataclass

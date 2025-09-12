@@ -7,6 +7,7 @@ from agents.randomAgent import RandomAgent
 from config.training_config import AlgoConfig, Algorithm
 from utils.logging import TrainLogger
 
+from agents.dqn_agent import DQNAgent
 
 class IAgent(Protocol):
     """Basic agent interface"""
@@ -67,15 +68,9 @@ class IAgent(Protocol):
 
 
 class WrapperAgent:
-    def __init__(
-        self,
-        config: AlgoConfig,
-        train_env_factory: Callable[[], Env],
-        eval_step_intervals: list[int] = None,
-        seed: int = 69,
-        device: str = "cpu",
-    ):
-        self.agent: IAgent | RandomAgent = None
+    def __init__(self, config: AlgoConfig, train_env_factory: Callable[[], Env],
+                 eval_step_intervals: list[int] | None = None, seed: int = 48, device: str = "cpu"):
+        self.agent = None
         match config.algorithm:
             case Algorithm.RANDOM:
                 self.agent = RandomAgent(
@@ -84,8 +79,14 @@ class WrapperAgent:
                     eval_schedule=eval_step_intervals,
                 )
             case Algorithm.CUSTOM_DQN:
-                # TODO:
-                pass
+                self.agent = DQNAgent(
+                    config=config,
+                    train_env_factory=train_env_factory,
+                    seed=seed,
+                    device=device,
+                )
+            case _:
+                raise NotImplementedError(f"Algorithm {config.algorithm} not supported yet.")
 
     def learn(
         self,
