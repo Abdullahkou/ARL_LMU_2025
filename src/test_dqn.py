@@ -2,6 +2,7 @@ import gymnasium as gym
 import numpy as np
 from agents.dqn_agent import DQNAgent
 import torch
+from utils.rendering import Renderer
 
 env_id = "LunarLander-v3"
 
@@ -13,8 +14,8 @@ def make_env():
 agent = DQNAgent(config=None, train_env_factory=make_env, device="cpu")
 
 
-agent.learn(total_steps=100_000)
-agent.save(base_dir="independent_dqn_agent")
+#agent.learn(total_steps=100_000)
+#agent.save(base_dir="independent_dqn_agent")
 
 # Evaluation
 n_eval_episodes = 5
@@ -23,7 +24,8 @@ n_eval_episodes = 5
 for head in range(agent.hp.n_q_heads):
     returns = []
     for i in range(n_eval_episodes):
-        eval_env = gym.make(env_id, render_mode="human")
+        eval_env = gym.make(env_id, render_mode="rgb_array")
+        renderer = Renderer(eval_env)
         obs, _ = eval_env.reset()
         done = False
         episode_return = 0
@@ -37,6 +39,16 @@ for head in range(agent.hp.n_q_heads):
             obs, reward, terminated, truncated, _ = eval_env.step(action)
             episode_return += reward
             done = terminated or truncated
+            if renderer is not None and renderer._enabled:
+                renderer.add_reward(reward)
+                esc, space = renderer.pump_events()
+                if esc:
+                    renderer.close()
+                elif space:
+                    renderer.toggle_speed()
+                else:
+                    renderer.render()
+
         eval_env.close()
         returns.append(episode_return)
     avg_return = np.mean(returns)
@@ -46,7 +58,8 @@ for head in range(agent.hp.n_q_heads):
 # Ensemble Voting (alle Heads mitteln)
 returns = []
 for i in range(n_eval_episodes):
-    eval_env = gym.make(env_id, render_mode="human")
+    eval_env = gym.make(env_id, render_mode="rgb_array")
+    renderer = Renderer(eval_env)
     obs, _ = eval_env.reset()
     done = False
     episode_return = 0
@@ -60,6 +73,15 @@ for i in range(n_eval_episodes):
         obs, reward, terminated, truncated, _ = eval_env.step(action)
         episode_return += reward
         done = terminated or truncated
+        if renderer is not None and renderer._enabled:
+            renderer.add_reward(reward)
+            esc, space = renderer.pump_events()
+            if esc:
+                renderer.close()
+            elif space:
+                renderer.toggle_speed()
+            else:
+                renderer.render()
     eval_env.close()
     returns.append(episode_return)
 print(f"Ensemble-Voting average return: {np.mean(returns)}")
