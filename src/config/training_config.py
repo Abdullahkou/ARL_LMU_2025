@@ -1,5 +1,6 @@
 ########################### CONSTANTS #################################
 
+import argparse
 import json
 import os
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
@@ -88,6 +89,7 @@ class Algorithm(Enum):
 
 class Environments(Enum):
     LUNAR_LANDER = "LunarLander-v3"
+    CARTPOLE_V1 = "CartPole-v1"
 
 
 class EnsembleAggregation(Enum):
@@ -138,49 +140,78 @@ def save_training_config(config: TrainingConfig, dir: str):
         yaml.safe_dump(dict, file, indent=4)
 
 
-def load_training_config(dir="src", training_args: dict[str, Any | None] | None = None):
-    """Optionally takes args dict to override loaded config! Helpful when not being able to rely on loading a yaml within slurm!"""
-
+def load_training_config(dir: str = "src",
+                         training_args: dict[str, Any] | None = None):
     file_path = f"{dir}/training_config.yaml"
-    train_config = None
 
     if not os.path.exists(file_path):
-        train_config = create_new_training_config(dir, training_args=training_args)
-    else:
-        with open(file_path, "r") as file:
-            config_dict: dict = yaml.safe_load(file)
+        create_new_training_config(dir, training_args=training_args)
 
-            train_config = deserialize(TrainingConfig, config_dict)
-            train_config = __overide_config(train_config, training_args)
+    # YAML als Dict laden
+    with open(file_path, "r") as f:
+        cfg: dict[str, Any] = yaml.safe_load(f)
 
-    json_format = json.dumps(train_config, cls=CustomJSONEncoder, indent=4)
-    print(f"Train config:\n {json_format}\n")
+    # Nur existierende Keys überschreiben (strict)
+    if training_args:
+        cfg = apply_overrides(cfg, training_args)   # <--- HIER auf dem Dict
 
-    return train_config
+    # Jetzt erst in die Dataclass
+    return deserialize(TrainingConfig, cfg)
+
+
+def apply_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+    if not overrides:
+        return config
+
+    for dotted, raw in overrides.items():
+        # 1) Wert aus String sinnvoll parsen (true/123/[...])
+        try:
+            value = yaml.safe_load(raw) if isinstance(raw, str) else raw
+        except Exception:
+            value = raw
+
+        # 2) Strikt durch existierende Dict-Pfade navigieren
+        parts = dotted.split(".")
+        cur: dict[str, Any] = config
+        for p in parts[:-1]:
+            if p not in cur:
+                raise KeyError(f"Unbekannter Key-Pfad: '{dotted}' (fehlend: '{p}')")
+            if not isinstance(cur[p], dict):
+                raise TypeError(f"Pfad kollidiert mit Nicht-Dict bei '{p}' für Key '{dotted}'")
+            cur = cur[p]  # type: ignore[assignment]
+
+        # 3) Letztes Segment MUSS existieren
+        last = parts[-1]
+        if last not in cur:
+            raise KeyError(f"Unbekannter End-Key: '{dotted}'")
+        cur[last] = value
+
+    return config
+
+
+def parse_training_args() -> dict[str, str]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--set",
+        dest="overrides",
+        action="append",
+        default=[],
+        help="Config-Override, z. B. --set steps=200000 --set algo_config.algorithm=PPO",
+    )
+    args = parser.parse_args()
+
+    overrides: dict[str, str] = {}
+    for item in args.overrides:
+        if "=" not in item:
+            raise ValueError(f"--set erwartet key=value, bekommen: {item}")
+        k, v = item.split("=", 1)
+        overrides[k] = v
+    return overrides
 
 
 def create_new_training_config(
     dir: str, training_args: dict[str, Any | None] | None = None
 ):
     config = TrainingConfig()
-    config = __overide_config(config, training_args)
     save_training_config(config, dir)
     return config
-
-
-def __overide_config(
-    train_config: TrainingConfig, training_args: dict[str, Any | None] | None
-):
-    # override training_config with launch args
-    if training_args is None:
-        return train_config
-
-    for key, value in training_args.items():
-        if value is None:
-            continue
-
-        # if hasattr(train_config.hyper_params, key):
-        #     print(f"Setting {key} of Hyper Params to {value}")
-        #     setattr(train_config.hyper_params, key, value)
-
-    return train_config
