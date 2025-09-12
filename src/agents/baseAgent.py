@@ -3,8 +3,7 @@ from typing import Callable, Protocol
 import numpy as np
 from gymnasium import Env
 
-from agents.randomAgent import RandomAgent
-from config.training_config import AlgoConfig, Algorithm
+from config.training_config import AlgoConfig
 from utils.logging import TrainLogger
 
 
@@ -48,91 +47,18 @@ class IAgent(Protocol):
         """
         pass
 
-    def save(self, base_dir: str) -> None:
-        """
-        Save the agent's state to a file.
-
-        :algo_name: name of the algorithm
-        :param base_dir: base_dir to save the agent's state to
-        """
-        pass
-
-    def load(self, base_dir: str) -> None:
-        """
-        Load the agent's state from a file.
-
-        :param base_dir: base_dir to load the agent's state from
-        """
-        pass
-
-
-class WrapperAgent:
-    def __init__(
-        self,
-        config: AlgoConfig,
-        train_env_factory: Callable[[], Env],
-        eval_step_intervals: list[int] = None,
-        seed: int = 69,
-        device: str = "cpu",
-    ):
-        self.agent: IAgent | RandomAgent = None
-        match config.algorithm:
-            case Algorithm.RANDOM:
-                self.agent = RandomAgent(
-                    seed=seed,
-                    train_env_factory=train_env_factory,
-                    eval_schedule=eval_step_intervals,
-                )
-            case Algorithm.CUSTOM_DQN:
-                # TODO:
-                pass
-
-    def learn(
-        self,
-        total_steps: int,
-        eval_fn: Callable | None = None,
-        train_logger: TrainLogger | None = None,
-    ):
-        """
-        Learn for a certain number of steps, optionally doing eval.
-
-        :param total_steps: number of steps to learn
-        :param (optional) eval_fn: evaluation fn to call during learning
-        """
-
-        self.agent.learn(
-            total_steps=total_steps, eval_fn=eval_fn, train_logger=train_logger
-        )
-
-    def predict(self, obs: np.ndarray, deterministic=True):
-        """
-        Predict the action to take given an observation.
-
-        :param obs: observation to predict action for
-        :param deterministic: whether to use deterministic action selection
-        :return: action to take
-        """
-        action, _ = self.agent.predict(obs, deterministic=deterministic)
-        return action
-
-    def save(self, path: str):
+    def save(self, path: str) -> None:
         """
         Save the agent's state to a file.
 
         :param path: path to save the agent's state to
         """
-        if isinstance(self.agent, RandomAgent):
-            return
+        pass
 
-        self.agent.save(path)
-
-    def load(self, path: str):
+    def load(self, path: str) -> None:
         """
         Load the agent's state from a file.
 
         :param path: path to load the agent's state from
         """
-        if isinstance(self.agent, RandomAgent):
-            return
-
-        self.agent.load(path)
+        pass

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from gymnasium import Env
 
-from agents.baseAgent import WrapperAgent
+from agents.wrapperAgent import WrapperAgent
 from config.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 from utils.rendering import Renderer

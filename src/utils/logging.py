@@ -14,14 +14,14 @@ EVAL_EP_COL = "Evaluation Episode"
 # ep col names
 STEPS = "Steps"
 REWARD = "Reward"
-TD_ERROR = "TD ERROR"
+VALUE_ERROR = "Value Error"
 
 EVAL_COLS = [
     STEPS,
     REWARD,
 ]
 
-TRAINING_COLS = [REWARD, TD_ERROR]
+TRAINING_COLS = [REWARD, VALUE_ERROR]
 
 
 class TrainLogger:
@@ -39,18 +39,22 @@ class TrainLogger:
 
     def __reset(self):
         self.reward = 0.0
-        self.td_error = 0.0
+        self.value_error = 0.0
 
-    def log_step(self, reward: float, td_error: float):
+    def log_step(self, reward: float, value_error: float):
+        self.reward += reward
+
+        if np.isnan(value_error):
+            self.value_error = np.nan
+        else:
+            self.value_error += value_error
+
         if self.steps % self.log_interval == 0:
             self.__save_bulk(self.steps)
-
         self.steps += 1
-        self.reward += reward
-        self.td_error += td_error
 
     def __save_bulk(self, current_training_step: int):
-        result = (self.reward, self.td_error)
+        result = (self.reward, self.value_error)
 
         self.episode_results.append(result)
 

@@ -6,7 +6,7 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 
-from agents.baseAgent import WrapperAgent
+from agents.wrapperAgent import WrapperAgent
 from config.training_config import (
     MODELS_DIR,
     SEEDS_DIR,
@@ -64,7 +64,7 @@ def train(
     eval_env = None
     try:
         for seed in seeds:
-            print(f"Starting seed {seed}")
+            print(f"\nStarting seed {seed}")
 
             train_env_factory = partial(
                 make_gym,
