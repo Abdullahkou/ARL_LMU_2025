@@ -81,3 +81,61 @@ class QNetwork(nn.Module):
         if self.n_heads == 1:
             out = out[:, 0]  # [B, n_actions]
         return out
+
+
+class IndependentQNetwork(nn.Module):
+    """
+    Q-network Ensemble ohne Parameter-Sharing.
+    Jeder Head ist ein komplett eigenes MLP (+ Output Layer).
+    - Supports classic und dueling architectures.
+    - Output shape:
+        classic: [B, n_actions]             if n_heads == 1
+                 [B, n_heads, n_actions]    if n_heads > 1
+        dueling: gleiche Shapes, aber mit V + A - mean(A)
+    """
+
+    def __init__(
+        self,
+        obs_shape,
+        n_actions: int,
+        hidden_sizes: Tuple[int, ...] = (256, 256),
+        dueling: bool = False,
+        n_heads: int = 1,
+    ):
+        super().__init__()
+        self.dueling = dueling
+        self.n_heads = n_heads
+        in_dim = int(torch.prod(torch.tensor(obs_shape)).item())
+
+        self.heads = nn.ModuleList()
+        for _ in range(n_heads):
+            encoder = MLP(in_dim, hidden_sizes)
+            last_dim = hidden_sizes[-1] if len(hidden_sizes) > 0 else in_dim
+
+            if not dueling:
+                q_head = nn.Sequential(encoder, nn.Linear(last_dim, n_actions))
+                self.heads.append(q_head)
+            else:
+                v_head = nn.Sequential(encoder, nn.Linear(last_dim, 1))
+                a_head = nn.Sequential(encoder, nn.Linear(last_dim, n_actions))
+                self.heads.append(nn.ModuleDict({"v": v_head, "a": a_head}))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() > 2:
+            x = x.view(x.size(0), -1)
+
+        qs = []
+        for head in self.heads:
+            if not self.dueling:
+                q = head(x)  # [B, n_actions]
+            else:
+                v = head["v"](x)  # [B, 1]
+                A = head["a"](x)  # [B, n_actions]
+                A_centered = A - A.mean(dim=1, keepdim=True)
+                q = v + A_centered
+            qs.append(q)
+
+        out = torch.stack(qs, dim=1)  # [B, n_heads, n_actions]
+        if self.n_heads == 1:
+            out = out[:, 0]  # [B, n_actions]
+        return out

@@ -13,8 +13,8 @@ def make_env():
 agent = DQNAgent(config=None, train_env_factory=make_env, device="cpu")
 
 
-agent.learn(total_steps=10_000)
-agent.save(base_dir="dqn_agent2")
+agent.learn(total_steps=100_000)
+agent.save(base_dir="independent_dqn_agent")
 
 # Evaluation
 n_eval_episodes = 5

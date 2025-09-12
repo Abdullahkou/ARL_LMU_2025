@@ -13,7 +13,7 @@ import torch.optim as optim
 from gymnasium import Env
 from config.training_config import AlgoConfig
 from utils.logging import TrainLogger
-from networks.q_network import QNetwork
+from networks.q_network import QNetwork, IndependentQNetwork
 from utils.replay_buffer import ReplayBuffer
 from tqdm import tqdm
 from agents.baseAgent import IAgent
@@ -39,6 +39,7 @@ class DQNHyperParams:
     n_q_heads: int = 3  # multiple Q heads for ensembles/uncertainty
     hidden_sizes: Tuple[int, ...] = (256, 256)  # MLP
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
+    independent_heads: bool = False  # shared encoder vs. completely independent
 
 
 class DQNAgent(IAgent):
@@ -81,7 +82,15 @@ class DQNAgent(IAgent):
         print(f"DQN using hyper-parameters: {self.hp}")
         print(f"Number of Q-heads: {self.hp.n_q_heads}")
         # networks
-        self.q_net = QNetwork(
+
+        if getattr(self.hp, "independent_heads", False):
+            print("Using IndependentQNetwork with separate encoders per head.")
+            NetClass = IndependentQNetwork
+        else:
+            print("Using QNetwork with shared encoder.")
+            NetClass = QNetwork
+
+        self.q_net = NetClass(
             obs_shape=self.obs_shape,
             n_actions=self.n_actions,
             hidden_sizes=self.hp.hidden_sizes,
@@ -89,13 +98,39 @@ class DQNAgent(IAgent):
             n_heads=self.hp.n_q_heads,
         ).to(self.device)
 
-        self.target_q_net = QNetwork(
+        self.target_q_net = NetClass(
             obs_shape=self.obs_shape,
             n_actions=self.n_actions,
             hidden_sizes=self.hp.hidden_sizes,
             dueling=self.hp.dueling,
             n_heads=self.hp.n_q_heads,
         ).to(self.device)
+
+        print(
+            f"Q-Network has {sum(p.numel() for p in self.q_net.parameters() if p.requires_grad)} trainable parameters."
+        )
+        print(
+            f"Target Q-Network has {sum(p.numel() for p in self.target_q_net.parameters() if p.requires_grad)} trainable parameters."
+        )
+
+        print(self.q_net)
+        print(self.target_q_net)
+
+        # self.q_net = QNetwork(
+        #     obs_shape=self.obs_shape,
+        #     n_actions=self.n_actions,
+        #     hidden_sizes=self.hp.hidden_sizes,
+        #     dueling=self.hp.dueling,
+        #     n_heads=self.hp.n_q_heads,
+        # ).to(self.device)
+
+        # self.target_q_net = QNetwork(
+        #     obs_shape=self.obs_shape,
+        #     n_actions=self.n_actions,
+        #     hidden_sizes=self.hp.hidden_sizes,
+        #     dueling=self.hp.dueling,
+        #     n_heads=self.hp.n_q_heads,
+        # ).to(self.device)
 
         self.target_q_net.load_state_dict(self.q_net.state_dict())
         self.target_q_net.eval()
