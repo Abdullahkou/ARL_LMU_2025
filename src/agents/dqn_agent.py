@@ -16,6 +16,7 @@ from utils.logging import TrainLogger
 from networks.q_network import QNetwork
 from utils.replay_buffer import ReplayBuffer
 from tqdm import tqdm
+from agents.baseAgent import IAgent
 
 
 @dataclass
@@ -40,7 +41,7 @@ class DQNHyperParams:
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
 
 
-class DQNAgent:
+class DQNAgent(IAgent):
     def __init__(
         self,
         config: AlgoConfig,
@@ -260,40 +261,6 @@ class DQNAgent:
         extras = {"q": q_used.detach().cpu().numpy(), "epsilon": float(self.epsilon)}
         return action, extras
 
-    # region --- old predict with active_head and epsilon-greedy ---
-    # @torch.no_grad()
-    # def predict(self, obs: np.ndarray, deterministic: bool = False):
-    #     """
-    #     Returns (action, extras) to match WrapperAgent usage.
-    #     extras: {"q": np.ndarray of Q-values (from head 0), "epsilon": float}
-    #     """
-    #     if obs.ndim == len(self.obs_shape):
-    #         obs_batch = np.expand_dims(obs, axis=0)
-    #     else:
-    #         obs_batch = obs
-
-    #     obs_t = torch.as_tensor(obs_batch, dtype=torch.float32, device=self.device)
-    #     q = self.q_net(obs_t)  # shape: [B, n_heads, n_actions] or [B, n_actions]
-    #     if q.ndim == 3:
-    #         # mehrere Heads -> nur den aktiven Head nehmen
-    #         q0 = q[:, self.active_head]
-    #     else:
-    #         q0 = q
-
-    #     if deterministic:
-    #         act = torch.argmax(q0, dim=-1).cpu().numpy()
-    #     else:
-    #         # epsilon-greedy for predict (optional)
-    #         if self.rng.random() < self.epsilon:
-    #             act = self.rng.integers(0, self.n_actions, size=(obs_batch.shape[0],))
-    #         else:
-    #             act = torch.argmax(q0, dim=-1).cpu().numpy()
-
-    #     action = act if obs.ndim > len(self.obs_shape) else act[0]
-    #     extras = {"q": q0.detach().cpu().numpy(), "epsilon": float(self.epsilon)}
-    #     return action, extras
-    # endregion
-
     def save(self, base_dir: str) -> None:
         os.makedirs(base_dir, exist_ok=True)
         payload = {
@@ -477,6 +444,40 @@ class DQNAgent:
             "train/head_losses": head_losses,
             "train/epsilon": float(self.epsilon),
         }
+
+    # region --- old predict with active_head and epsilon-greedy ---
+    # @torch.no_grad()
+    # def predict(self, obs: np.ndarray, deterministic: bool = False):
+    #     """
+    #     Returns (action, extras) to match WrapperAgent usage.
+    #     extras: {"q": np.ndarray of Q-values (from head 0), "epsilon": float}
+    #     """
+    #     if obs.ndim == len(self.obs_shape):
+    #         obs_batch = np.expand_dims(obs, axis=0)
+    #     else:
+    #         obs_batch = obs
+
+    #     obs_t = torch.as_tensor(obs_batch, dtype=torch.float32, device=self.device)
+    #     q = self.q_net(obs_t)  # shape: [B, n_heads, n_actions] or [B, n_actions]
+    #     if q.ndim == 3:
+    #         # mehrere Heads -> nur den aktiven Head nehmen
+    #         q0 = q[:, self.active_head]
+    #     else:
+    #         q0 = q
+
+    #     if deterministic:
+    #         act = torch.argmax(q0, dim=-1).cpu().numpy()
+    #     else:
+    #         # epsilon-greedy for predict (optional)
+    #         if self.rng.random() < self.epsilon:
+    #             act = self.rng.integers(0, self.n_actions, size=(obs_batch.shape[0],))
+    #         else:
+    #             act = torch.argmax(q0, dim=-1).cpu().numpy()
+
+    #     action = act if obs.ndim > len(self.obs_shape) else act[0]
+    #     extras = {"q": q0.detach().cpu().numpy(), "epsilon": float(self.epsilon)}
+    #     return action, extras
+    # endregion
 
 
 # region --- old _sgd_step with multiple heads and masks --- OHNE EBQL
