@@ -64,7 +64,6 @@ def eval(
         not evaluating_checkpoints
         or (evaluating_checkpoints and not save_path.exists())
     ):
-        print("created")
         save_path.parent.mkdir(parents=True, exist_ok=True)
         with open(save_file, "w", newline="") as f:
             writer = csv.writer(f)

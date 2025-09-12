@@ -51,7 +51,9 @@ class SB3Wrapper(IAgent):
         :param (optional) eval_fn: evaluation fn to call during learning, called at every step!
         :param (optional) eval_schedule: eval interval, useful for multi agent setting!
         """
-        callback = SB3Callback(eval_fn=eval_fn, train_logger=train_logger)
+        callback = SB3Callback(
+            total_timesteps=total_steps, eval_fn=eval_fn, train_logger=train_logger
+        )
         self.sb3Agent.learn(total_timesteps=total_steps, callback=callback)
 
     def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
