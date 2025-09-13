@@ -6,31 +6,33 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 
-from agents.baseAgent import WrapperAgent
-from config.training_config import (MODELS_DIR, SEEDS_DIR,
-                                    TRAINING_RESULTS_DIR,
-                                    TRAINING_RESULTS_FILE,
-                                    VALIDATION_RESULTS_DIR,
-                                    VALIDATION_RESULTS_FILE,
-                                    load_training_config, make_gym,
-                                    parse_training_args, save_training_config)
-
+from agents.wrapperAgent import WrapperAgent
+from config.training_config import (
+    MODELS_DIR,
+    SEEDS_DIR,
+    TRAINING_RESULTS_DIR,
+    TRAINING_RESULTS_FILE,
+    VALIDATION_RESULTS_DIR,
+    VALIDATION_RESULTS_FILE,
+    load_training_config,
+    make_gym,
+    parse_training_args,
+    save_training_config,
+)
 from utils.eval_model import eval_checkpoint
-from utils.logging import (TRAINING_COLS, TrainLogger, parse_steps,
-                           save_seed_totals)
+from utils.logging import TRAINING_COLS, TrainLogger, parse_steps, save_seed_totals
 
 
 def train(
     base_dir: str,
     training_args: dict[str, Any]
-    | None = None,  # To override any args from the train_config,
+    | None = None,  # To override any args from the train_config
     use_rendering=False,
     save_checkpoints=False,
     save_intermediate_results=False,
     device="cpu",
     save_postfix="",
 ):
-    
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
     total_steps = training_config.steps
