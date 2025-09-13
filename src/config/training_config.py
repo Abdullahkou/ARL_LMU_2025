@@ -177,6 +177,9 @@ def load_training_config(dir: str = "src",
     if training_args:
         cfg = apply_overrides(cfg, training_args)   # <--- HIER auf dem Dict
 
+    json_format = json.dumps(cfg, cls=CustomJSONEncoder, indent=4)
+    print(f"Train config:\n {json_format}\n")
+
     # Jetzt erst in die Dataclass
     return deserialize(TrainingConfig, cfg)
 
