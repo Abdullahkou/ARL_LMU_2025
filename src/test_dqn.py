@@ -2,9 +2,9 @@ import gymnasium as gym
 import numpy as np
 import torch
 
-from agents.dqn_agent import DQNAgent
-from config.training_config import Algorithm
-from utils.rendering import Renderer
+from src.agents.dqn_agent import DQNAgent
+from src.config.training_config import AlgoConfig
+from src.utils.rendering import Renderer
 
 env_id = "LunarLander-v3"
 
@@ -13,11 +13,11 @@ def make_env():
     return gym.make(env_id)
 
 
-agent = DQNAgent(config=Algorithm(), train_env_factory=make_env, device="cpu")
+agent = DQNAgent(config=AlgoConfig(), train_env_factory=make_env, device="cpu")
 
 
 agent.learn(total_steps=100_000)
-agent.save(path="independent_dqn_agent/dqn")
+agent.save(path="results/test/independent_dqn_agent/dqn")
 
 # Evaluation
 n_eval_episodes = 5
