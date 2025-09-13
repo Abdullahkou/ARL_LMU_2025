@@ -6,32 +6,31 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 
-from agents.wrapperAgent import WrapperAgent
-from config.training_config import (
-    MODELS_DIR,
-    SEEDS_DIR,
-    TRAINING_RESULTS_DIR,
-    TRAINING_RESULTS_FILE,
-    VALIDATION_RESULTS_DIR,
-    VALIDATION_RESULTS_FILE,
-    load_training_config,
-    make_gym,
-    save_training_config,
-)
+from agents.baseAgent import WrapperAgent
+from config.training_config import (MODELS_DIR, SEEDS_DIR,
+                                    TRAINING_RESULTS_DIR,
+                                    TRAINING_RESULTS_FILE,
+                                    VALIDATION_RESULTS_DIR,
+                                    VALIDATION_RESULTS_FILE,
+                                    load_training_config, make_gym,
+                                    parse_training_args, save_training_config)
+
 from utils.eval_model import eval_checkpoint
-from utils.logging import TRAINING_COLS, TrainLogger, parse_steps, save_seed_totals
+from utils.logging import (TRAINING_COLS, TrainLogger, parse_steps,
+                           save_seed_totals)
 
 
 def train(
     base_dir: str,
     training_args: dict[str, Any]
-    | None = None,  # To override any args from the train_config
+    | None = None,  # To override any args from the train_config,
     use_rendering=False,
     save_checkpoints=False,
     save_intermediate_results=False,
     device="cpu",
     save_postfix="",
 ):
+    
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
     total_steps = training_config.steps
@@ -163,27 +162,6 @@ def train(
 
 
 def main():
-    # TODO:
-    # parser = argparse.ArgumentParser()
-
-    # parser.add_argument(
-    #     "--algos",
-    #     type=str,
-    #     default=["RANDOM"],
-    #     nargs="+",
-    # )
-    # parser.add_argument(
-    #     "--save_postfix", help="save_postfix", type=str, default="", nargs="?"
-    # )
-    # parser.add_argument(
-    #     "--env_id",
-    #     help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'Walker2d-v5'",
-    #     type=str,
-    #     default="Walker2d-v5",  # Standard-Umgebung
-    # )
-
-    # args = parser.parse_args()
-
     device = "cpu"  # if network is simple MLP, CPU is generally preferred!
     # device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -191,7 +169,7 @@ def main():
     save_postfix = ""  # args.save_postfix
     # if save_postfix != "":
     #     save_postfix = f"_{save_postfix}"
-    training_args = None
+    training_args = parse_training_args()
 
     base_dir = "results/test"
 

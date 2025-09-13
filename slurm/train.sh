@@ -11,4 +11,4 @@ cd ..
 
 uv version
 
-uv run src/train.py
+uv run src/train.py --set steps=100 --set eval_episodes=3 --set eval_phases=3
