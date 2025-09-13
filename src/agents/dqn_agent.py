@@ -10,14 +10,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from components.q_network import IndependentQNetwork, QNetwork
 from gymnasium import Env
 from tqdm import tqdm
 
 from agents.baseAgent import IAgent
+from agents.components.replay_buffer import ReplayBuffer
 from config.training_config import AlgoConfig
-from networks.q_network import IndependentQNetwork, QNetwork
 from utils.logging import TrainLogger
-from utils.replay_buffer import ReplayBuffer
 
 
 @dataclass
