@@ -44,13 +44,12 @@ class TrainLogger:
     def log_step(self, reward: float, value_error: float):
         self.reward += reward
 
-        if np.isnan(value_error):
-            self.value_error = np.nan
-        else:
+        if not np.isnan(value_error):
             self.value_error += value_error
 
         if self.steps % self.log_interval == 0:
             self.__save_bulk(self.steps)
+
         self.steps += 1
 
     def __save_bulk(self, current_training_step: int):

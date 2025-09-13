@@ -103,15 +103,31 @@ class EnsembleAggregation(Enum):
 
 @dataclass
 class HyperParams:
-    pass
+    gamma: float = 0.99
+    learning_rate: float = 3e-4
+    batch_size: int = 256
+    buffer_size: int = 30_000
+    learning_starts: int = 3_000
+    train_freq: int = 1  # env steps per gradient step
+    gradient_steps: int = 1  # how many SGD steps per train call
+    target_update_interval: int = 1_000  # in env steps
+    tau: float = 1.0  # hard update by default; set <1.0 for soft update
+    max_epsilon: float = 0.5
+    min_epsilon: float = 0.05
+    epsilon_decay_steps: int = 250_000  # linear decay steps
+    clip_grad_norm: float | None = 10.0
+    double_q: bool = True  # enable Double DQN
+    dueling: bool = False  # enable Dueling DQN
+    n_q_heads: int = 3  # multiple Q heads for ensembles/uncertainty
+    hidden_sizes: tuple[int, ...] = (256, 256)  # MLP
+    use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
+    independent_heads: bool = False  # shared encoder vs. completely independent
+    ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
 
 
 @dataclass
 class AlgoConfig:
-    algorithm: Algorithm = Algorithm.RANDOM
-    num_agents: int = 1
-    num_q_networks: int = 1
-    ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
+    algorithm: Algorithm = Algorithm.CUSTOM_DQN
 
     ignore_hyper_params: bool = False
     hyper_params: HyperParams = field(default_factory=HyperParams)
@@ -120,7 +136,7 @@ class AlgoConfig:
 @dataclass
 class TrainingConfig:
     env_id: Environments = Environments.LUNAR_LANDER
-    steps: int = 100_000
+    steps: int = 1_000_000
 
     seeds: list[int] = field(default_factory=lambda: [0, 1, 2])
     train_env_seed: int = 2
@@ -131,7 +147,7 @@ class TrainingConfig:
     algo_config: AlgoConfig = field(default_factory=AlgoConfig)
 
     record_training: bool = True
-    train_log_phases: int = 20
+    train_log_phases: int = 40
 
 
 def save_training_config(config: TrainingConfig, dir: str):

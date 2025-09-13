@@ -30,7 +30,7 @@ class RandomAgent(IAgent):
 
         action = self.action_space.sample()
 
-        return action
+        return action, {}
 
     def learn(
         self,
@@ -52,7 +52,7 @@ class RandomAgent(IAgent):
 
                     eval_fn(current_step=step)
 
-                    action = self.predict(state, deterministic=False)
+                    action, _ = self.predict(state, deterministic=False)
                     state, reward, terminated, truncated, _ = self.env.step(action)
                     done = terminated or truncated
 

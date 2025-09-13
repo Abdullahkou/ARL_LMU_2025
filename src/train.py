@@ -146,7 +146,7 @@ def train(
 
         if len(seeds_training_results) > 0:
             training_step_intervals = [
-                i * log_interval for i in range(train_log_phases + 1)
+                i * log_interval for i in range(1, train_log_phases + 1)
             ]
 
             save_seed_totals(

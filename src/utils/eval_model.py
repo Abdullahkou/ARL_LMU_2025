@@ -86,7 +86,7 @@ def eval(
 
         done = False
         while not done:
-            action = model.predict(state)
+            action, _ = model.predict(state)
             state, reward, terminated, truncated, _ = eval_env.step(action)
             done = terminated or truncated
             ep_logger.log_step(reward)

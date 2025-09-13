@@ -4,6 +4,7 @@ import numpy as np
 from gymnasium import Env
 
 from agents.baseAgent import IAgent
+from agents.dqn_agent import DQNAgent
 from agents.randomAgent import RandomAgent
 from agents.sb3Wrapper import SB3Wrapper
 from config.training_config import AlgoConfig, Algorithm
@@ -28,8 +29,12 @@ class WrapperAgent:
                     eval_schedule=eval_step_intervals,
                 )
             case Algorithm.CUSTOM_DQN:
-                # TODO:
-                pass
+                self.agent = DQNAgent(
+                    config=config,
+                    train_env_factory=train_env_factory,
+                    seed=seed,
+                    device=device,
+                )
             case _:
                 self.agent = SB3Wrapper(
                     config=config,

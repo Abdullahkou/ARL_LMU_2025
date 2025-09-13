@@ -56,7 +56,7 @@ class SB3Wrapper(IAgent):
         )
         self.sb3Agent.learn(total_timesteps=total_steps, callback=callback)
 
-    def predict(self, obs: np.ndarray, deterministic=False) -> np.ndarray:
+    def predict(self, obs: np.ndarray, deterministic=False):
         """
         Predict the action to take given an observation.
 
@@ -64,23 +64,26 @@ class SB3Wrapper(IAgent):
         :param deterministic: whether to use deterministic action selection
         :return: action to take
         """
-        return self.sb3Agent.predict(observation=obs, deterministic=deterministic)[0]
+        return self.sb3Agent.predict(observation=obs, deterministic=deterministic)
 
-    def save(self, path: str) -> None:
+    def save(self, base_dir: str) -> None:
         """
         Save the agent's state to a file.
 
-        :param path: path to save the agent's state to
+        :algo_name: name of the algorithm
+        :param base_dir: base_dir to save the agent's state to
         """
-        self.sb3Agent.save(path=path)
+        self.sb3Agent.save(path=base_dir)
 
-    def load(self, path: str) -> None:
+    def load(self, base_dir: str) -> None:
         """
         Load the agent's state from a file.
 
-        :param path: path to load the agent's state from
+        :param base_dir: base_dir to load the agent's state from
         """
-        self.sb3Agent = self.sb3Agent.__class__.load(path=path, env=self.sb3Agent.env)
+        self.sb3Agent = self.sb3Agent.__class__.load(
+            path=base_dir, env=self.sb3Agent.env
+        )
 
 
 class SB3Callback(BaseCallback):
