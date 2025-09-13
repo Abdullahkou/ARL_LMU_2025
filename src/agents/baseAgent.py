@@ -47,19 +47,19 @@ class IAgent(Protocol):
         """
         pass
 
-    def save(self, base_dir: str) -> None:
+    def save(self, path: str) -> None:
         """
         Save the agent's state to a file.
 
         :algo_name: name of the algorithm
-        :param base_dir: base_dir to save the agent's state to
+        :param path: path to save the agent's state to
         """
         pass
 
-    def load(self, base_dir: str) -> None:
+    def load(self, path: str) -> None:
         """
         Load the agent's state from a file.
 
-        :param base_dir: base_dir to load the agent's state from
+        :param path: path to load the agent's state from
         """
         pass

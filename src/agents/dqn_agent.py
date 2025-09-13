@@ -299,8 +299,8 @@ class DQNAgent(IAgent):
         extras = {"q": q_used.detach().cpu().numpy(), "epsilon": float(self.epsilon)}
         return action, extras
 
-    def save(self, base_dir: str) -> None:
-        os.makedirs(base_dir, exist_ok=True)
+    def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
         payload = {
             "q_net": self.q_net.state_dict(),
             "target_q_net": self.target_q_net.state_dict(),
@@ -312,10 +312,10 @@ class DQNAgent(IAgent):
             "n_actions": self.n_actions,
             "seed": self.seed,
         }
-        torch.save(payload, os.path.join(base_dir, "dqn.pt"))
+        torch.save(payload, os.path.join(path, ".pt"))
 
-    def load(self, base_dir: str) -> None:
-        path = os.path.join(base_dir, "dqn.pt")
+    def load(self, path: str) -> None:
+        path = os.path.join(path, ".pt")
         payload: dict = torch.load(path, map_location=self.device)
 
         if (

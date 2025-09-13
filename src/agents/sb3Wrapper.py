@@ -66,24 +66,22 @@ class SB3Wrapper(IAgent):
         """
         return self.sb3Agent.predict(observation=obs, deterministic=deterministic)
 
-    def save(self, base_dir: str) -> None:
+    def save(self, path: str) -> None:
         """
         Save the agent's state to a file.
 
         :algo_name: name of the algorithm
-        :param base_dir: base_dir to save the agent's state to
+        :param path: path to save the agent's state to
         """
-        self.sb3Agent.save(path=base_dir)
+        self.sb3Agent.save(path=path)
 
-    def load(self, base_dir: str) -> None:
+    def load(self, path: str) -> None:
         """
         Load the agent's state from a file.
 
-        :param base_dir: base_dir to load the agent's state from
+        :param path: path to load the agent's state from
         """
-        self.sb3Agent = self.sb3Agent.__class__.load(
-            path=base_dir, env=self.sb3Agent.env
-        )
+        self.sb3Agent = self.sb3Agent.__class__.load(path=path, env=self.sb3Agent.env)
 
 
 class SB3Callback(BaseCallback):

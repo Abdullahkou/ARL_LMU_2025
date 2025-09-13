@@ -43,7 +43,7 @@ def eval_checkpoint(
 
     if save_model:
         model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
-        model.save(model.agent.__class__.__name__, model_path)
+        model.save(model_path)
 
 
 def eval(
