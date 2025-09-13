@@ -1,232 +1,210 @@
-import argparse
 import os
 import traceback
 from functools import partial
-from typing import Any, Optional
+from typing import Any
 
 import gymnasium as gym
 import numpy as np
 
-from agents.baseAgent import Algo, BaseAgent
-from tuning.training_config import (
+from agents.wrapperAgent import WrapperAgent
+from config.training_config import (
     MODELS_DIR,
-    SEED_PREFIX,
     SEEDS_DIR,
-    TRAIN_DIR,
+    TRAINING_RESULTS_DIR,
     TRAINING_RESULTS_FILE,
+    VALIDATION_RESULTS_DIR,
+    VALIDATION_RESULTS_FILE,
     load_training_config,
+    make_gym,
     save_training_config,
 )
 from utils.eval_model import eval_checkpoint
-from utils.logging import parse_steps, save_seed_totals
-from utils.validate_algos import choose_effective_algos
+from utils.logging import TRAINING_COLS, TrainLogger, parse_steps, save_seed_totals
 
 
 def train(
-    models: list[str],
     base_dir: str,
-    env_id: str,
-    save_postfix: str = "",
-    training_args: dict[
-        str, Optional[Any]
-    ] = None,  # To override any args into the train_config
+    training_args: dict[str, Any]
+    | None = None,  # To override any args from the train_config
     use_rendering=False,
     save_checkpoints=False,
     save_intermediate_results=False,
     device="cpu",
+    save_postfix="",
 ):
     training_config = load_training_config(training_args=training_args)
     seeds = training_config.seeds
     total_steps = training_config.steps
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
-    ignore_hyper = training_config.ignore_hyper_params
 
-    if not ignore_hyper:
-        params = training_config.hyper_params
-    else:
-        params = {}
-
-    model_name = f"{'_'.join([a for a in models])}"
-
+    model_name = training_config.algo_config.algorithm.value
+    env_id = training_config.env_id.value
     print(
-        f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | fixed env seeds: {training_config.use_fixed_env_seeds} | Hyperparams: {params}"
+        f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | Hyperparams: "
     )
-    training_config.algorithm = model_name
 
     steps_dir = parse_steps(total_steps=total_steps)
-    model_dir = f"{base_dir}/{env_id}/{steps_dir}/{TRAIN_DIR}/{models[0]}{save_postfix}"
+    model_dir = f"{base_dir}/{env_id}/{steps_dir}/{model_name}{save_postfix}"
     save_training_config(training_config, model_dir)
 
     eval_schedule = total_steps // eval_phases
-    eval_schedule_list = [
-        eval_schedule * i for i in range(eval_phases + 1)
-    ]  # für RandomAgent
 
-    interval_steps = [
-        i * eval_schedule for i in range(0, eval_phases + 1)
-    ]  # the first training step is always evaluated/included    seeds_results: list[np.ndarray] = []
+    train_log_phases = training_config.train_log_phases
+    log_interval = None
+    if training_config.record_training:
+        log_interval = total_steps // train_log_phases
 
-    seeds_results: list[np.ndarray] = []
+    # the first training step is always evaluated/included
+    eval_step_intervals = [i * eval_schedule for i in range(eval_phases + 1)]
 
-    train_env = None
+    seeds_validation_results = list[np.ndarray]()
+    seeds_training_results = list[np.ndarray]()
+
     eval_env = None
     try:
         for seed in seeds:
-            print(f"Starting seed {seed}")
-            env_seeds = (seed, seed + 1)
+            print(f"\nStarting seed {seed}")
 
-            if training_config.use_fixed_env_seeds:
-                env_seeds = training_config.fixed_env_seeds
-
-            train_env = gym.make(env_id)
-
-            eval_env = gym.make(env_id, render_mode="rgb_array")
-            eval_env.reset(seed=env_seeds[1])
-            agent = BaseAgent(
-                algos=models,
-                train_env=train_env,
-                device=device,
-                seed=seed,
-                hyper_params=params,
+            train_env_factory = partial(
+                make_gym,
+                env_id=env_id,
+                seed=training_config.train_env_seed,
             )
 
-            results_dir = f"{model_dir}/{SEEDS_DIR}/{SEED_PREFIX}{seed}"
+            eval_env = gym.make(
+                env_id, render_mode="rgb_array" if use_rendering else None
+            )
+            eval_env.reset(seed=training_config.eval_env_seed)
 
-            if not os.path.exists(results_dir):
-                os.makedirs(results_dir)
+            agent = WrapperAgent(
+                config=training_config.algo_config,
+                train_env_factory=train_env_factory,
+                eval_step_intervals=eval_step_intervals,
+                seed=seed,
+                device=device,
+            )
 
-            training_results: list[tuple] = []
+            seed_result_dir = f"{model_dir}/{SEEDS_DIR}/seed_{seed}"
 
-            results_file = f"{results_dir}/{TRAINING_RESULTS_FILE}"
+            if not os.path.exists(seed_result_dir):
+                os.makedirs(seed_result_dir)
+
+            validation_results_file = f"{seed_result_dir}/{VALIDATION_RESULTS_FILE}"
+
+            validation_results = list[tuple]()
 
             training_fn = partial(
                 eval_checkpoint,
                 model=agent,
                 eval_env=eval_env,
-                steps_until_next_eval=eval_schedule,
-                results_dir=results_dir,
-                training_results=training_results,
+                validation_results=validation_results,
+                results_dir=seed_result_dir,
                 num_episodes=num_episodes,
-                save_file=results_file,
+                eval_schedule=eval_schedule,
+                save_file=validation_results_file,
                 use_rendering=use_rendering,
                 save_model=save_checkpoints,
-                intermediate_results_dir=results_dir
+                intermediate_results_dir=seed_result_dir
                 if save_intermediate_results
                 else None,
             )
 
+            training_results_file = f"{seed_result_dir}/{TRAINING_RESULTS_FILE}"
+
+            train_logger = None
+            if training_config.record_training:
+                log_interval = total_steps // train_log_phases
+                train_logger = TrainLogger(
+                    training_results_file, log_interval=log_interval
+                )
+
             agent.learn(
-                total_steps=total_steps,
-                eval_fn=training_fn,
-                eval_schedule_list=eval_schedule_list,
+                total_steps=total_steps, eval_fn=training_fn, train_logger=train_logger
             )
 
-            # speichere alle Modelle
             agent_model_dir = f"{model_dir}/{MODELS_DIR}"
             if not os.path.exists(agent_model_dir):
                 os.makedirs(agent_model_dir)
 
-            agent.save(
-                algo_name=model_name, path=f"{agent_model_dir}/{SEED_PREFIX}{seed}"
-            )
+            agent.save(path=f"{agent_model_dir}/seed_{seed}")
 
-            seeds_results.append(training_results)
+            if train_logger is not None:
+                trainig_results = train_logger.get_training_results()
+                seeds_training_results.append(trainig_results)
 
-            train_env.close()
-            train_env = None
+            seeds_validation_results.append(validation_results)
 
             eval_env.close()
             eval_env = None
 
         save_seed_totals(
-            seeds_results=seeds_results,
-            model_dir=model_dir,
-            interval_steps=interval_steps,
+            seeds_results=seeds_validation_results,
+            dir=f"{model_dir}/{VALIDATION_RESULTS_DIR}",
+            step_intervals=eval_step_intervals,
         )
+
+        if len(seeds_training_results) > 0:
+            training_step_intervals = [
+                i * log_interval for i in range(1, train_log_phases + 1)
+            ]
+
+            save_seed_totals(
+                seeds_results=seeds_training_results,
+                dir=f"{model_dir}/{TRAINING_RESULTS_DIR}",
+                step_intervals=training_step_intervals,
+                columns=TRAINING_COLS,
+            )
 
     except (Exception, KeyboardInterrupt):
         traceback.print_exc()
     if eval_env is not None:
         eval_env.close()
-    if train_env is not None:
-        train_env.close()
 
 
 def main():
-    # Create Arguments
-    parser = argparse.ArgumentParser()
+    # TODO:
+    # parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--algos",
-        help=f"Erlaubt: {', '.join([a.name for a in Algo])}",
-        type=str,
-        default=["ppo"],
-        nargs="+",
-    )
-    parser.add_argument(
-        "--save_postfix", help="save_postfix", type=str, default="", nargs="?"
-    )
-    parser.add_argument(
-        "--env_id",
-        help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'Walker2d-v5'",
-        type=str,
-        default="Walker2d-v5",  # Standard-Umgebung
-    )
+    # parser.add_argument(
+    #     "--algos",
+    #     type=str,
+    #     default=["RANDOM"],
+    #     nargs="+",
+    # )
+    # parser.add_argument(
+    #     "--save_postfix", help="save_postfix", type=str, default="", nargs="?"
+    # )
+    # parser.add_argument(
+    #     "--env_id",
+    #     help="Name der Gymnasium-Umgebung, z. B. 'Pendulum-v1' oder 'Walker2d-v5'",
+    #     type=str,
+    #     default="Walker2d-v5",  # Standard-Umgebung
+    # )
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    device = "cpu"  # if network is simple MLP, CPU is preferred for SAC!
+    device = "cpu"  # if network is simple MLP, CPU is generally preferred!
     # device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Überprüfung der Nutzereingabe
-    if args.env_id not in gym.registry:
-        raise SystemExit(
-            f"Ungültige Umgebung: {args.env_id}.\n"
-            f"Verfügbare sind z. B.: {list(gym.registry.keys())[:10]}"
-        )
-    env_id = args.env_id
-
-    if len(args.algos) > 1:
-        raise SystemExit("Bitte nur einen Algorithmus angeben!")
-
-    # Validierung der Algorithmen
-    model_name = args.algos[0].upper()
-    valid_algos = []  # Currently, only one algo can be given but the validation assumes a list of algos with elaborate cases for single and multiple algos
-    # Is this a preemptive optimization?
-
-    if model_name not in Algo._member_names_:
-        raise SystemExit(
-            f"Ungültiger Algorithmus: {model_name}\n"
-            f"Erlaubt: {', '.join([a.name for a in Algo])}"
-        )
-    else:
-        valid_algos.append(model_name)
-
-    save_postfix = args.save_postfix
-
-    if save_postfix != "":
-        save_postfix = f"_{save_postfix}"
-
-    effective_algos = choose_effective_algos(
-        valid_algos, args.env_id
-    )  # wirft Fehler bei Single+inkompatibel
+    # TODO:
+    save_postfix = ""  # args.save_postfix
+    # if save_postfix != "":
+    #     save_postfix = f"_{save_postfix}"
+    training_args = None
 
     base_dir = "results/test"
 
     # automatically loads training_config from main directory!, creates if not exists
     train(
-        models=effective_algos,
         base_dir=base_dir,
-        env_id=env_id,
-        save_postfix=save_postfix,
+        training_args=training_args,
         use_rendering=False,
-        save_checkpoints=True,
+        save_checkpoints=False,
         save_intermediate_results=False,
         device=device,
+        save_postfix=save_postfix,
     )
-
-    # plot_results(model, base_dir=base_dir)
 
 
 if __name__ == "__main__":

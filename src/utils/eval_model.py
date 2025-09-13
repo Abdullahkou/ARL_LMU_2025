@@ -4,29 +4,29 @@ from pathlib import Path
 
 from gymnasium import Env
 
-from agents.baseAgent import BaseAgent, IEnsemble
-from agents.models import RandomAgent
-from tuning.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
+from agents.wrapperAgent import WrapperAgent
+from config.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 from utils.rendering import Renderer
 
 
 def eval_checkpoint(
     current_step: int,
-    training_results: list[tuple],
+    validation_results: list[tuple],
     results_dir: str,
-    model: BaseAgent | IEnsemble,
+    model: WrapperAgent,
     eval_env: Env,
-    steps_until_next_eval: int,
+    eval_schedule: int,
     num_episodes: int,
     save_file: str,
     intermediate_results_dir: str | None = None,
-    save_model: bool = False,
+    save_model=False,
     use_rendering=False,
 ):
-    if current_step % steps_until_next_eval != 0:
+    if current_step % eval_schedule != 0:
         return
-    eval_ep = current_step // steps_until_next_eval
+
+    eval_ep = current_step // eval_schedule
 
     results = eval(
         model=model,
@@ -39,16 +39,15 @@ def eval_checkpoint(
         current_step=current_step,
     )
 
-    training_results.append(results)
+    validation_results.append(results)
 
-    if save_model and not isinstance(model.agents, RandomAgent):
+    if save_model:
         model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
-        model.save(model.agents.__class__.__name__, model_path)
-        print(f"Model saved at {model_path}")
+        model.save(model_path)
 
 
 def eval(
-    model: BaseAgent | IEnsemble,
+    model: WrapperAgent,
     eval_env: Env,
     num_episodes: int,
     save_file: str,
@@ -61,8 +60,10 @@ def eval(
     print(f"Starting evaluation {eval_ep}")
 
     save_path = Path(save_file)
-    if eval_ep == 0 and (not evaluating_checkpoints or (evaluating_checkpoints and not save_path.exists())):
-        print("created")
+    if eval_ep == 0 and (
+        not evaluating_checkpoints
+        or (evaluating_checkpoints and not save_path.exists())
+    ):
         save_path.parent.mkdir(parents=True, exist_ok=True)
         with open(save_file, "w", newline="") as f:
             writer = csv.writer(f)
@@ -85,7 +86,7 @@ def eval(
 
         done = False
         while not done:
-            action = model.predict(state)
+            action, _ = model.predict(state)
             state, reward, terminated, truncated, _ = eval_env.step(action)
             done = terminated or truncated
             ep_logger.log_step(reward)

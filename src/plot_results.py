@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from tuning.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE, TRAIN_DIR
+from config.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE
 from utils.logging import REWARD, STEPS
 
 
@@ -20,12 +20,21 @@ def plot_results(
 
     x_vals = None  # common x basis among all dfs
     for agent_name, (mean_file, std_file) in agents_to_plot.items():
-        mean_df = pd.read_csv(mean_file, index_col=0)
+        mean_df = pd.read_csv(
+            mean_file, index_col=0, dtype=str
+        )  # read as str to avoid errors on parse
+        mean_df = mean_df.apply(
+            pd.to_numeric, errors="coerce"
+        )  # non parsable values coerced to nan
+        mean_df = mean_df.ffill().bfill()  # fill in nans colwise
         mean = mean_df
 
         std = None
         if std_file is not None:
-            std = pd.read_csv(std_file, index_col=0)
+            # same as above
+            std = pd.read_csv(std_file, index_col=0, dtype=str)
+            std = std.apply(pd.to_numeric, errors="coerce")
+            std = std.ffill().bfill()
 
         results_to_plot[agent_name] = (mean, std)
 
@@ -83,41 +92,15 @@ def plot_results(
 
 
 def main():
-    base_dir = f"results/test/Walker2d-v5/1.0M/{TRAIN_DIR}"
+    base_dir = "results/test/LunarLander-v3/100.0K"
     save_dir = f"{base_dir}/_plots"
 
     agents = {
-        "PPO": (
-            f"{base_dir}/PPO/{SMA_MEAN_FILE}",
-            f"{base_dir}/PPO/{SMA_STD_FILE}",
+        "NOT_RANDOM": (
+            f"{base_dir}/RANDOM/Validation_Results/{SMA_MEAN_FILE}",
+            f"{base_dir}/RANDOM/Validation_Results/{SMA_STD_FILE}",
         )
     }
-    # agents = {
-    #     RANDOM_AGENT: (
-    #         f"{base_dir}/RANDOM/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/RANDOM/{SMA_STD_FILE}",
-    #     ),
-    #     "SAC": (
-    #         f"{base_dir}/SAC/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/SAC/{SMA_STD_FILE}",
-    #     ),
-    #     "PPO": (
-    #         f"{base_dir}/PPO/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/PPO/{SMA_STD_FILE}",
-    #     ),
-    #     "TD3": (
-    #         f"{base_dir}/TD3/{SMA_MEAN_FILE}",
-    #         f"{base_dir}/TD3/{SMA_STD_FILE}",
-    #     ),
-    #     "PPO_TD3 (weighted)": (
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_mean.csv",
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_TD3_weighted/sma_std.csv"
-    #     ),
-    #     "PPO_SAC_TD3 (weighted)": (
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_mean.csv",
-    #         f"results/test/Walker2d-v5/1.5M/eval/checkpoints_PPO_SAC_TD3_weighted/sma_std.csv"
-    #     )
-    # }
 
     plot_results(agents, save_dir=save_dir)
 

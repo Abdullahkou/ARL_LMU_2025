@@ -1,22 +1,25 @@
+from functools import partial
+
 import gymnasium
 
-from agents.ensembles import EvalEnsemble
-from tuning.training_config import MODELS_DIR, load_training_config
+from agents.wrapperAgent import WrapperAgent
+from config.training_config import MODELS_DIR, load_training_config, make_gym
 from utils.rendering import Renderer
 
 
-def render_eval(
-    base_dir: str, env_id: str, algos: list[tuple[str, str]], num_episodes: int = 10
-):
-    config_dir = f"{base_dir}/{algos[0][0]}"
+def render_eval(config_dir: str, env_id: str, seed: int, num_episodes: int = 10):
     config = load_training_config(dir=config_dir)
-    eval_env_seed = config.fixed_env_seeds[1]
+    eval_env_seed = config.train_env_seed[1]
 
     render_env = gymnasium.make(env_id, render_mode="rgb_array")
     render_env.reset(seed=eval_env_seed)
     renderer = Renderer(env=render_env)
 
-    model = EvalEnsemble({"algos": algos, "env": render_env})
+    env_factory = partial(make_gym, env_id=env_id, seed=config.eval_env_seed)
+
+    model = WrapperAgent(config.algo_config, env_factory=env_factory, seed=seed)
+    load_path = f"{config_dir}/{MODELS_DIR}/seed_{seed}"
+    model.load(load_path)
 
     for i in range(num_episodes):
         state, _ = render_env.reset()
@@ -39,16 +42,11 @@ def render_eval(
 
 
 def main():
-    base_dir = "results/test/Walker2d-v5/1M/train"
-
     env_id = "Walker2d-v5"
-    algos = [
-        ("PPO", f"{base_dir}/PPO/{MODELS_DIR}/seed_0"),
-        ("SAC", f"{base_dir}/SAC/{MODELS_DIR}/seed_0"),
-        ("TD3", f"{base_dir}/TD3/{MODELS_DIR}/seed_0"),
-    ]
+    model_dir = "results/test/Walker2d-v5/1M/RANDOM"
+    seed = 0
 
-    render_eval(base_dir=base_dir, env_id=env_id, algos=algos, num_episodes=20)
+    render_eval(config_dir=model_dir, env_id=env_id, seed=seed, num_episodes=20)
 
 
 if __name__ == "__main__":
