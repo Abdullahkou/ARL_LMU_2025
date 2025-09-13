@@ -4,7 +4,7 @@ from pathlib import Path
 
 from gymnasium import Env
 
-from agents.baseAgent import WrapperAgent
+from agents.wrapperAgent import WrapperAgent
 from config.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 from utils.rendering import Renderer
@@ -43,7 +43,7 @@ def eval_checkpoint(
 
     if save_model:
         model_path = os.path.join(results_dir, f"{CHECKPOINT_PREFIX}{eval_ep}")
-        model.save(model.agent.__class__.__name__, model_path)
+        model.save(model_path)
 
 
 def eval(
@@ -64,7 +64,6 @@ def eval(
         not evaluating_checkpoints
         or (evaluating_checkpoints and not save_path.exists())
     ):
-        print("created")
         save_path.parent.mkdir(parents=True, exist_ok=True)
         with open(save_file, "w", newline="") as f:
             writer = csv.writer(f)
@@ -87,7 +86,7 @@ def eval(
 
         done = False
         while not done:
-            action = model.predict(state)
+            action, _ = model.predict(state)
             state, reward, terminated, truncated, _ = eval_env.step(action)
             done = terminated or truncated
             ep_logger.log_step(reward)

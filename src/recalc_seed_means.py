@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from config.training_config import (
-    SEED_PREFIX,
     SEEDS_DIR,
     TRAINING_RESULTS_FILE,
     load_training_config,
@@ -18,7 +17,7 @@ def recalc_seed_means(model_dir):
     seed_results: list[np.ndarray] = []
     for seed in seeds:
         train_results_file = (
-            f"{model_dir}/{SEEDS_DIR}/{SEED_PREFIX}{seed}/{TRAINING_RESULTS_FILE}"
+            f"{model_dir}/{SEEDS_DIR}/seed_{seed}/{TRAINING_RESULTS_FILE}"
         )
 
         df = pd.read_csv(train_results_file, index_col=0)

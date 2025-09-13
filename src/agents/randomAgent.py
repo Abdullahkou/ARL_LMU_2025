@@ -3,10 +3,11 @@ from typing import Callable
 import numpy as np
 from gymnasium import Env
 
+from agents.baseAgent import IAgent
 from utils.logging import TrainLogger
 
 
-class RandomAgent:
+class RandomAgent(IAgent):
     def __init__(
         self,
         train_env_factory: Callable[[], Env],
@@ -56,7 +57,7 @@ class RandomAgent:
                     done = terminated or truncated
 
                     step += 1
-                    train_logger.log_step(reward=reward, td_error=0)
+                    train_logger.log_step(reward=reward, value_error=np.nan)
         else:
             step_intervals = [i * self.eval_schedule for i in range(total_steps + 1)]
 

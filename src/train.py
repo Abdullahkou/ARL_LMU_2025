@@ -14,6 +14,7 @@ from config.training_config import (MODELS_DIR, SEEDS_DIR,
                                     VALIDATION_RESULTS_FILE,
                                     load_training_config, make_gym,
                                     parse_training_args, save_training_config)
+
 from utils.eval_model import eval_checkpoint
 from utils.logging import (TRAINING_COLS, TrainLogger, parse_steps,
                            save_seed_totals)
@@ -62,7 +63,7 @@ def train(
     eval_env = None
     try:
         for seed in seeds:
-            print(f"Starting seed {seed}")
+            print(f"\nStarting seed {seed}")
 
             train_env_factory = partial(
                 make_gym,
@@ -144,7 +145,7 @@ def train(
 
         if len(seeds_training_results) > 0:
             training_step_intervals = [
-                i * log_interval for i in range(train_log_phases + 1)
+                i * log_interval for i in range(1, train_log_phases + 1)
             ]
 
             save_seed_totals(

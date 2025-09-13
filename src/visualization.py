@@ -2,7 +2,7 @@ from functools import partial
 
 import gymnasium
 
-from agents.baseAgent import WrapperAgent
+from agents.wrapperAgent import WrapperAgent
 from config.training_config import MODELS_DIR, load_training_config, make_gym
 from utils.rendering import Renderer
 
