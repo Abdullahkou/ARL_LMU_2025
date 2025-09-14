@@ -195,6 +195,11 @@ def apply_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> dict[s
         except Exception:
             value = raw
 
+        # Neu: leere Strings oder None ignorieren → Default bleibt
+        if value is None or value == "":
+            continue
+
+
         # 2) Strikt durch existierende Dict-Pfade navigieren
         parts = dotted.split(".")
         cur: dict[str, Any] = config
