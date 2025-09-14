@@ -11,4 +11,4 @@ cd ..
 
 uv version
 
-uv run src/train.py
+uv run src/train.py --save_postfix steps=100 algo_config.algortihm=RANDOM

@@ -39,7 +39,7 @@ def train(
     model_name = training_config.algo_config.algorithm.value
     env_id = training_config.env_id.value
     print(
-        f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | Hyperparams: "
+        f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps"
     )
 
     steps_dir = parse_steps(total_steps=total_steps)
@@ -170,7 +170,7 @@ def main():
 
     args, extras = parser.parse_known_args()
 
-    save_postfix = args.save_postfix
+    save_postfix = args.save_postfix or ""
     if save_postfix != "":
         save_postfix = f"_{save_postfix}"
 
