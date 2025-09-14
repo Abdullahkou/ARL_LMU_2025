@@ -173,7 +173,7 @@ def main():
     #     save_postfix = f"_{save_postfix}"
     training_args = parse_training_args()
 
-    base_dir = "results/test"
+    base_dir = "results"
 
     # automatically loads training_config from main directory!, creates if not exists
     train(
