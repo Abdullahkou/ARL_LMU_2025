@@ -1,3 +1,4 @@
+import argparse
 import os
 import traceback
 from functools import partial
@@ -7,20 +8,16 @@ import gymnasium as gym
 import numpy as np
 
 from agents.wrapperAgent import WrapperAgent
-from config.training_config import (
-    MODELS_DIR,
-    SEEDS_DIR,
-    TRAINING_RESULTS_DIR,
-    TRAINING_RESULTS_FILE,
-    VALIDATION_RESULTS_DIR,
-    VALIDATION_RESULTS_FILE,
-    load_training_config,
-    make_gym,
-    parse_training_args,
-    save_training_config,
-)
+from config.training_config import (MODELS_DIR, SEEDS_DIR,
+                                    TRAINING_RESULTS_DIR,
+                                    TRAINING_RESULTS_FILE,
+                                    VALIDATION_RESULTS_DIR,
+                                    VALIDATION_RESULTS_FILE,
+                                    load_training_config, make_gym,
+                                    parse_training_args, save_training_config)
 from utils.eval_model import eval_checkpoint
-from utils.logging import TRAINING_COLS, TrainLogger, parse_steps, save_seed_totals
+from utils.logging import (TRAINING_COLS, TrainLogger, parse_steps,
+                           save_seed_totals)
 
 
 def train(
@@ -42,7 +39,7 @@ def train(
     model_name = training_config.algo_config.algorithm.value
     env_id = training_config.env_id.value
     print(
-        f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps | Hyperparams: "
+        f"Model: {model_name} | Env: {env_id} | seed: {seeds}  | {total_steps} steps | {eval_phases} evals | {num_episodes} eval eps"
     )
 
     steps_dir = parse_steps(total_steps=total_steps)
@@ -168,10 +165,16 @@ def main():
     # device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # TODO:
-    save_postfix = ""  # args.save_postfix
-    # if save_postfix != "":
-    #     save_postfix = f"_{save_postfix}"
-    training_args = parse_training_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--save_postfix", type=str)
+
+    args, extras = parser.parse_known_args()
+
+    save_postfix = args.save_postfix or ""
+    if save_postfix != "":
+        save_postfix = f"_{save_postfix}"
+
+    training_args = parse_training_args(extras=extras)
 
     base_dir = "results"
 
