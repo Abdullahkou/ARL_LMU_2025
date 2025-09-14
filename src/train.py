@@ -1,3 +1,4 @@
+import argparse
 import os
 import traceback
 from functools import partial
@@ -7,20 +8,16 @@ import gymnasium as gym
 import numpy as np
 
 from agents.wrapperAgent import WrapperAgent
-from config.training_config import (
-    MODELS_DIR,
-    SEEDS_DIR,
-    TRAINING_RESULTS_DIR,
-    TRAINING_RESULTS_FILE,
-    VALIDATION_RESULTS_DIR,
-    VALIDATION_RESULTS_FILE,
-    load_training_config,
-    make_gym,
-    parse_training_args,
-    save_training_config,
-)
+from config.training_config import (MODELS_DIR, SEEDS_DIR,
+                                    TRAINING_RESULTS_DIR,
+                                    TRAINING_RESULTS_FILE,
+                                    VALIDATION_RESULTS_DIR,
+                                    VALIDATION_RESULTS_FILE,
+                                    load_training_config, make_gym,
+                                    parse_training_args, save_training_config)
 from utils.eval_model import eval_checkpoint
-from utils.logging import TRAINING_COLS, TrainLogger, parse_steps, save_seed_totals
+from utils.logging import (TRAINING_COLS, TrainLogger, parse_steps,
+                           save_seed_totals)
 
 
 def train(
@@ -168,10 +165,16 @@ def main():
     # device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # TODO:
-    save_postfix = ""  # args.save_postfix
-    # if save_postfix != "":
-    #     save_postfix = f"_{save_postfix}"
-    training_args = parse_training_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--save_postfix", type=str)
+
+    args, extras = parser.parse_known_args()
+
+    save_postfix = args.save_postfix
+    if save_postfix != "":
+        save_postfix = f"_{save_postfix}"
+
+    training_args = parse_training_args(extras=extras)
 
     base_dir = "results/test"
 

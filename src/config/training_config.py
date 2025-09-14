@@ -219,21 +219,31 @@ def apply_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> dict[s
     return config
 
 
-def parse_training_args() -> dict[str, str]:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--set",
-        dest="overrides",
-        action="append",
-        default=[],
-        help="Config-Override, z. B. --set steps=200000 --set algo_config.algorithm=PPO",
-    )
-    args = parser.parse_args()
+# def parse_training_args() -> dict[str, str]:
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument(
+#         "--set",
+#         dest="overrides",
+#         action="append",
+#         default=[],
+#         help="Config-Override, z. B. --set steps=200000 --set algo_config.algorithm=PPO",
+#     )
+#     args = parser.parse_args()
 
-    overrides: dict[str, str] = {}
-    for item in args.overrides:
+#     overrides: dict[str, str] = {}
+#     for item in args.overrides:
+#         if "=" not in item:
+#             raise ValueError(f"--set erwartet key=value, bekommen: {item}")
+#         k, v = item.split("=", 1)
+#         overrides[k] = v
+#     return overrides
+
+
+def parse_training_args(extras: list[str]) -> dict[str, str]:
+    overrides = {}
+    for item in extras:
         if "=" not in item:
-            raise ValueError(f"--set erwartet key=value, bekommen: {item}")
+            raise ValueError(f"Config-Override erwartet key=value, bekommen: {item}")
         k, v = item.split("=", 1)
         overrides[k] = v
     return overrides
