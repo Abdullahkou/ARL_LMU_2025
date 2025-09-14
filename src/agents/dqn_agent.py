@@ -1,7 +1,6 @@
 # agents/dqn_agent.py
 from __future__ import annotations
 
-import os
 import random
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional, Tuple
@@ -300,7 +299,6 @@ class DQNAgent(IAgent):
         return action, extras
 
     def save(self, path: str) -> None:
-        os.makedirs(path, exist_ok=True)
         payload = {
             "q_net": self.q_net.state_dict(),
             "target_q_net": self.target_q_net.state_dict(),
@@ -312,10 +310,10 @@ class DQNAgent(IAgent):
             "n_actions": self.n_actions,
             "seed": self.seed,
         }
-        torch.save(payload, os.path.join(path, ".pt"))
+        torch.save(payload, f"{path}.pt")
 
     def load(self, path: str) -> None:
-        path = os.path.join(path, ".pt")
+        path = f"{path}.pt"
         payload: dict = torch.load(path, weights_only=False)
 
         if (
