@@ -316,7 +316,7 @@ class DQNAgent(IAgent):
 
     def load(self, path: str) -> None:
         path = os.path.join(path, ".pt")
-        payload: dict = torch.load(path, map_location=self.device)
+        payload: dict = torch.load(path, weights_only=False)
 
         if (
             tuple(payload["obs_shape"]) != tuple(self.obs_shape)
