@@ -86,11 +86,11 @@ def train(
 
             train_env_factory = partial(
                 make_gym,
-                env_id=env_id,
+                id=env_id,
                 seed=training_config.train_env_seed,
             )
 
-            eval_env = gym.make(
+            eval_env = make_gym(
                 env_id, render_mode="rgb_array" if use_rendering else None
             )
             eval_env.reset(seed=training_config.eval_env_seed)

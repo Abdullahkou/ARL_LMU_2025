@@ -1,16 +1,15 @@
-import gymnasium as gym
 import numpy as np
 import torch
 
 from src.agents.dqn_agent import DQNAgent
-from src.config.training_config import AlgoConfig
+from src.config.training_config import AlgoConfig, make_gym
 from src.utils.rendering import Renderer
 
 env_id = "LunarLander-v3"
 
 
 def make_env():
-    return gym.make(env_id)
+    return make_gym(env_id)
 
 
 agent = DQNAgent(config=AlgoConfig(), train_env_factory=make_env, device="cpu")
@@ -26,7 +25,7 @@ n_eval_episodes = 5
 for head in range(agent.hp.n_q_heads):
     returns = []
     for i in range(n_eval_episodes):
-        eval_env = gym.make(env_id, render_mode="rgb_array")
+        eval_env = make_gym(env_id, render_mode="rgb_array")
         renderer = Renderer(eval_env)
         obs, _ = eval_env.reset()
         done = False
@@ -60,7 +59,7 @@ for head in range(agent.hp.n_q_heads):
 # Ensemble Voting (alle Heads mitteln)
 returns = []
 for i in range(n_eval_episodes):
-    eval_env = gym.make(env_id, render_mode="rgb_array")
+    eval_env = make_gym(env_id, render_mode="rgb_array")
     renderer = Renderer(eval_env)
     obs, _ = eval_env.reset()
     done = False
@@ -92,7 +91,7 @@ print(f"Ensemble-Voting average return: {np.mean(returns)}")
 # 2) Teste "Random Head pro Episode"
 # returns = []
 # for i in range(n_eval_episodes):
-#     eval_env = gym.make(env_id, render_mode="human")
+#     eval_env = make_gym(env_id, render_mode="human")
 #     obs, _ = eval_env.reset()
 #     done = False
 #     episode_return = 0

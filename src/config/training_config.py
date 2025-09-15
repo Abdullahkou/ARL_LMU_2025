@@ -8,6 +8,9 @@ from typing import Any
 
 import gymnasium
 import yaml
+from gymnasium import Env
+
+from utils.env_wrapper import ObsArrayWrapper, SafeActionWrapper
 
 RANDOM_AGENT = "RANDOM"
 
@@ -75,9 +78,12 @@ def deserialize(cls, data):
     return cls(**kwargs)
 
 
-def make_gym(env_id: str, seed=42):
-    env = gymnasium.make(env_id)
+def make_gym(id: str, seed=42, render_mode: str | None = None) -> Env:
+    env = gymnasium.make(id=id, render_mode=render_mode)
     env.reset(seed=seed)
+
+    env = ObsArrayWrapper(env)
+    env = SafeActionWrapper(env)
 
     return env
 

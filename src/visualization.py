@@ -1,7 +1,5 @@
 from functools import partial
 
-import gymnasium
-
 from agents.wrapperAgent import WrapperAgent
 from config.training_config import MODELS_DIR, load_training_config, make_gym
 from utils.rendering import Renderer
@@ -11,7 +9,7 @@ def render_eval(config_dir: str, env_id: str, seed: int, num_episodes: int = 10)
     config = load_training_config(dir=config_dir)
     eval_env_seed = config.train_env_seed[1]
 
-    render_env = gymnasium.make(env_id, render_mode="rgb_array")
+    render_env = make_gym(env_id, render_mode="rgb_array")
     render_env.reset(seed=eval_env_seed)
     renderer = Renderer(env=render_env)
 
