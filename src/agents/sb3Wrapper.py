@@ -110,9 +110,6 @@ class SB3Callback(BaseCallback):
         if self.eval_fn is not None:  # eval right away
             self.eval_fn(current_step=self.num_timesteps)
 
-        if self.train_logger:
-            self.train_logger.log_step(reward=0, value_error=np.nan)
-
     def _on_rollout_start(self) -> None:
         """
         A rollout is the collection of environment interaction

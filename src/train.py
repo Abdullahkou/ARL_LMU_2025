@@ -7,7 +7,6 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 
-from agents.dqn_agent import DQNAgent
 from agents.wrapperAgent import WrapperAgent
 from config.training_config import (
     HEADS_DIR,
@@ -17,6 +16,7 @@ from config.training_config import (
     TRAINING_RESULTS_FILE,
     VALIDATION_RESULTS_DIR,
     VALIDATION_RESULTS_FILE,
+    Algorithm,
     load_training_config,
     make_gym,
     parse_training_args,
@@ -47,6 +47,11 @@ def train(
     total_steps = training_config.steps
     eval_phases = training_config.eval_phases
     num_episodes = training_config.eval_episodes
+
+    should_record_heads = (
+        training_config.record_heads
+        and training_config.algo_config.algorithm == Algorithm.CUSTOM_DQN
+    )
 
     model_name = training_config.algo_config.algorithm.value
     env_id = training_config.env_id.value
@@ -102,9 +107,7 @@ def train(
                 os.makedirs(seed_result_dir)
 
             # record heads
-            if training_config.record_heads and isinstance(
-                wrapperAgent.agent, DQNAgent
-            ):
+            if should_record_heads:
                 dqn_agent = wrapperAgent.agent
                 num_heads = dqn_agent.hp.n_q_heads
 
@@ -209,7 +212,7 @@ def train(
             )
 
         # head results
-        if training_config.record_heads:
+        if should_record_heads:
             aggregate_head_results(
                 agent_dir=model_dir,
                 num_heads=training_config.algo_config.hyper_params.n_q_heads,
