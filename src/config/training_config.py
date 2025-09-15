@@ -95,6 +95,8 @@ class Algorithm(Enum):
 
 class Environments(Enum):
     LUNAR_LANDER = "LunarLander-v3"
+    TAXI = "Taxi-v3"
+    FROZEN_LAKE = "FrozenLake-v1"
     CARTPOLE_V1 = "CartPole-v1"
 
 

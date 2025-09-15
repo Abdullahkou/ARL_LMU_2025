@@ -11,4 +11,4 @@ cd ..
 
 uv version
 
-uv run src/train.py --save_postfix="1qh" steps=1000 algo_config.algortihm= algo_config.hyper_params.n_q_heads=1
+uv run src/train.py --save_postfix="3qh" algo_config.hyper_params.n_q_heads=3 env_id=Taxi-v3  algo_config.algortihm= steps=

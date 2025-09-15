@@ -73,8 +73,8 @@ class DQNAgent(IAgent):
 
         self.hp = config.hyper_params
 
-        print(f"DQN using hyper-parameters: {self.hp}")
-        print(f"Number of Q-heads: {self.hp.n_q_heads}")
+        # print(f"DQN using hyper-parameters: {self.hp}")
+        # print(f"Number of Q-heads: {self.hp.n_q_heads}")
         # networks
 
         if getattr(self.hp, "independent_heads", False):
@@ -466,7 +466,8 @@ class DQNAgent(IAgent):
                 continue
 
             # Q(s,a) für diesen Head
-            q = self.q_net(obs)[:, h]  # [B, n_actions]
+            # TODO: not working for 1 head
+            q: torch.Tensor = self.q_net(obs)[:, h]  # [B, n_actions]
             q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
 
             with torch.no_grad():
