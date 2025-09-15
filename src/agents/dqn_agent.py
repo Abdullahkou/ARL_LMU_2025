@@ -144,6 +144,44 @@ class DQNAgent(IAgent):
         self.epsilon = self.hp.max_epsilon
         self.best_eval_metric = -float("inf")
 
+        # eval indiviudal heads
+        self.eval_heads_fn = None
+
+    def set_indiviudal_head_eval_fn(
+        self, eval_heads_fn: Callable[[int], None] | None = None
+    ):
+        # eval indiviudal heads
+        self.eval_heads_fn = eval_heads_fn
+
+    @torch.no_grad()
+    def get_heads_predictions(self, obs: np.ndarray):
+        """
+        Args:
+            obs: np.ndarray of shape (num_heads, obs_dim) - one observation per head-env
+        Returns:
+            actions: list[int] of length num_heads - one greedy action per head
+        """
+        num_heads = self.hp.n_q_heads
+        obs_t = torch.as_tensor(obs, dtype=torch.float32, device=self.device)
+
+        # Forward pass
+        q_values: torch.Tensor = self.q_net(obs_t)
+
+        if q_values.ndim == 3:
+            # shape: (batch=num_heads, num_heads, n_actions)
+            # pick head i’s Q-values for obs i
+            q_values_per_head = [q_values[i, i] for i in range(num_heads)]
+        else:
+            # shape: (batch=num_heads, n_actions)
+            q_values_per_head = [q_values[i] for i in range(num_heads)]
+
+        # Greedy action per head
+        actions = [
+            int(torch.argmax(q_head, dim=-1).item()) for q_head in q_values_per_head
+        ]
+
+        return actions
+
     def learn(
         self,
         total_steps: int,
@@ -163,6 +201,8 @@ class DQNAgent(IAgent):
         pbar = tqdm(total=total_steps, desc="Training", unit="step")
 
         #  evaluation --OPTIONAL--
+        if self.eval_heads_fn is not None:
+            self.eval_heads_fn(self.global_step)
         if eval_fn is not None:
             eval_fn(self.global_step)
 
@@ -192,6 +232,8 @@ class DQNAgent(IAgent):
                 #  evaluation --OPTIONAL--
                 if eval_fn is not None:
                     eval_fn(self.global_step)
+                if self.eval_heads_fn is not None:
+                    self.eval_heads_fn(self.global_step)
 
                 # log training
                 if train_logger is not None:
@@ -276,6 +318,7 @@ class DQNAgent(IAgent):
             obs_t
         )  # [B, n_heads, n_actions] oder [B, n_actions] janahch ob multi-head oder nicht
 
+        q_used: torch.Tensor
         if q.ndim == 3:
             if getattr(self.hp, "use_ebql", False):
                 # EBQL: Mittelung über alle Heads

@@ -2,12 +2,91 @@ import csv
 import os
 from pathlib import Path
 
+import numpy as np
 from gymnasium import Env
+from gymnasium.vector import VectorEnv
 
+from agents.dqn_agent import DQNAgent
 from agents.wrapperAgent import WrapperAgent
 from config.training_config import CHECKPOINT_PREFIX, INTERMEDIATE_RESULTS_PREFIX
 from utils.logging import EVAL_COLS, TRAINING_STEP_COL, EpisodeLogger
 from utils.rendering import Renderer
+
+
+def eval_checkpoints_heads(
+    current_step: int,
+    dqnAgent: DQNAgent,
+    eval_env_per_head: VectorEnv,
+    eval_schedule: int,
+    num_episodes: int,
+    save_files: list[str],
+    intermediate_results_dirs: str | None = None,
+):
+    if current_step % eval_schedule != 0:
+        return
+
+    eval_ep = current_step // eval_schedule
+
+    print(f"Starting evaluation {eval_ep}")
+
+    num_heads = len(save_files)
+    assert eval_env_per_head.num_envs == num_heads, (
+        f"VectorEnv has {eval_env_per_head.num_envs} envs but {num_heads} save files were given"
+    )
+
+    if eval_ep == 0:
+        for file in save_files:
+            Path(file).parent.mkdir(parents=True, exist_ok=True)
+            with open(file, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([TRAINING_STEP_COL] + EVAL_COLS)
+
+    intermediate_results_files = None
+    if intermediate_results_dirs is not None:
+        intermediate_results_files = (
+            f"{dir}/{INTERMEDIATE_RESULTS_PREFIX}{eval_ep}.csv"
+            for dir in intermediate_results_dirs
+        )
+
+    ep_loggers = list[EpisodeLogger]()
+    for head_idx in range(num_heads):
+        ep_logger = EpisodeLogger(
+            intermediate_results_file=intermediate_results_files[head_idx]
+            if intermediate_results_dirs is not None
+            else None
+        )
+        ep_loggers.append(ep_logger)
+
+    # Run episodes in parallel
+    for ep in range(num_episodes):
+        states, _ = eval_env_per_head.reset()
+        dones = np.array([False] * num_heads)
+
+        while not np.all(dones):
+            actions = dqnAgent.get_heads_predictions(
+                states
+            )  # shape (num_heads, action_dim)
+            states, rewards, terminated, truncated, _ = eval_env_per_head.step(actions)
+            step_dones = np.logical_or(terminated, truncated)
+
+            for head_idx in range(num_heads):
+                if not dones[head_idx]:  # log ep end
+                    ep_loggers[head_idx].log_step(rewards[head_idx])
+
+            dones |= step_dones
+
+        for head_idx in range(num_heads):
+            ep_loggers[head_idx].log_episode()
+
+    # Write results per head
+    for head_idx in range(num_heads):
+        results = ep_loggers[head_idx].get_eps_mean()
+        row = (current_step,) + results
+        with open(save_files[head_idx], "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
+    print(f"Evaluation {eval_ep} Finished")
 
 
 def eval_checkpoint(

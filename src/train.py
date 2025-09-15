@@ -7,17 +7,29 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 
+from agents.dqn_agent import DQNAgent
 from agents.wrapperAgent import WrapperAgent
-from config.training_config import (MODELS_DIR, SEEDS_DIR,
-                                    TRAINING_RESULTS_DIR,
-                                    TRAINING_RESULTS_FILE,
-                                    VALIDATION_RESULTS_DIR,
-                                    VALIDATION_RESULTS_FILE,
-                                    load_training_config, make_gym,
-                                    parse_training_args, save_training_config)
-from utils.eval_model import eval_checkpoint
-from utils.logging import (TRAINING_COLS, TrainLogger, parse_steps,
-                           save_seed_totals)
+from config.training_config import (
+    HEADS_DIR,
+    MODELS_DIR,
+    SEEDS_DIR,
+    TRAINING_RESULTS_DIR,
+    TRAINING_RESULTS_FILE,
+    VALIDATION_RESULTS_DIR,
+    VALIDATION_RESULTS_FILE,
+    load_training_config,
+    make_gym,
+    parse_training_args,
+    save_training_config,
+)
+from utils.eval_model import eval_checkpoint, eval_checkpoints_heads
+from utils.logging import (
+    TRAINING_COLS,
+    TrainLogger,
+    aggregate_head_results,
+    parse_steps,
+    save_seed_totals,
+)
 
 
 def train(
@@ -59,7 +71,8 @@ def train(
     seeds_validation_results = list[np.ndarray]()
     seeds_training_results = list[np.ndarray]()
 
-    eval_env = None
+    eval_env: gym.Env | None = None
+    eval_env_per_head: gym.vector.VectorEnv | None = None
     try:
         for seed in seeds:
             print(f"\nStarting seed {seed}")
@@ -75,7 +88,7 @@ def train(
             )
             eval_env.reset(seed=training_config.eval_env_seed)
 
-            agent = WrapperAgent(
+            wrapperAgent = WrapperAgent(
                 config=training_config.algo_config,
                 train_env_factory=train_env_factory,
                 eval_step_intervals=eval_step_intervals,
@@ -88,19 +101,56 @@ def train(
             if not os.path.exists(seed_result_dir):
                 os.makedirs(seed_result_dir)
 
-            validation_results_file = f"{seed_result_dir}/{VALIDATION_RESULTS_FILE}"
+            # record heads
+            if training_config.record_heads and isinstance(
+                wrapperAgent.agent, DQNAgent
+            ):
+                dqn_agent = wrapperAgent.agent
+                num_heads = dqn_agent.hp.n_q_heads
+
+                if num_heads > 1:
+                    eval_env_per_head: gym.vector.VectorEnv = gym.make_vec(
+                        id=env_id, num_envs=num_heads
+                    )
+                    eval_env_per_head.reset(seed=seed)
+
+                    heads_dirs = [
+                        f"{seed_result_dir}/{HEADS_DIR}/h{head_idx}"
+                        for head_idx in range(num_heads)
+                    ]
+
+                    validation_results_files = [
+                        f"{head_dir}/{VALIDATION_RESULTS_FILE}"
+                        for head_dir in heads_dirs
+                    ]
+
+                    eval_heads_fn = partial(
+                        eval_checkpoints_heads,
+                        dqnAgent=dqn_agent,
+                        eval_env_per_head=eval_env_per_head,
+                        num_episodes=num_episodes,
+                        eval_schedule=eval_schedule,
+                        save_files=validation_results_files,
+                        intermediate_results_dirs=heads_dirs
+                        if save_intermediate_results
+                        else None,
+                    )
+
+                    dqn_agent.set_indiviudal_head_eval_fn(eval_heads_fn=eval_heads_fn)
+
+            validation_results_files = f"{seed_result_dir}/{VALIDATION_RESULTS_FILE}"
 
             validation_results = list[tuple]()
 
-            training_fn = partial(
+            eval_fn = partial(
                 eval_checkpoint,
-                model=agent,
+                model=wrapperAgent,
                 eval_env=eval_env,
                 validation_results=validation_results,
                 results_dir=seed_result_dir,
                 num_episodes=num_episodes,
                 eval_schedule=eval_schedule,
-                save_file=validation_results_file,
+                save_file=validation_results_files,
                 use_rendering=use_rendering,
                 save_model=save_checkpoints,
                 intermediate_results_dir=seed_result_dir
@@ -117,15 +167,15 @@ def train(
                     training_results_file, log_interval=log_interval
                 )
 
-            agent.learn(
-                total_steps=total_steps, eval_fn=training_fn, train_logger=train_logger
+            wrapperAgent.learn(
+                total_steps=total_steps, eval_fn=eval_fn, train_logger=train_logger
             )
 
             agent_model_dir = f"{model_dir}/{MODELS_DIR}"
             if not os.path.exists(agent_model_dir):
                 os.makedirs(agent_model_dir)
 
-            agent.save(path=f"{agent_model_dir}/seed_{seed}")
+            wrapperAgent.save(path=f"{agent_model_dir}/seed_{seed}")
 
             if train_logger is not None:
                 trainig_results = train_logger.get_training_results()
@@ -135,6 +185,10 @@ def train(
 
             eval_env.close()
             eval_env = None
+
+            if eval_env_per_head is not None:
+                eval_env_per_head.close()
+                eval_env_per_head = None
 
         save_seed_totals(
             seeds_results=seeds_validation_results,
@@ -154,10 +208,20 @@ def train(
                 columns=TRAINING_COLS,
             )
 
+        # head results
+        if training_config.record_heads:
+            aggregate_head_results(
+                agent_dir=model_dir,
+                num_heads=training_config.algo_config.hyper_params.n_q_heads,
+                seeds=seeds,
+            )
+
     except (Exception, KeyboardInterrupt):
         traceback.print_exc()
     if eval_env is not None:
         eval_env.close()
+    if eval_env_per_head is not None:
+        eval_env_per_head.close()
 
 
 def main():

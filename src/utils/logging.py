@@ -1,12 +1,21 @@
 import csv
 import os
 from collections import deque
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-from config.training_config import MEAN_FILE, SMA_MEAN_FILE, SMA_STD_FILE, STD_FILE
+from config.training_config import (
+    HEADS_DIR,
+    MEAN_FILE,
+    SEEDS_DIR,
+    SMA_MEAN_FILE,
+    SMA_STD_FILE,
+    STD_FILE,
+    VALIDATION_RESULTS_FILE,
+)
 
 TRAINING_STEP_COL = "Training Step"
 EVAL_EP_COL = "Evaluation Episode"
@@ -107,6 +116,44 @@ class EpisodeLogger:
         mean = np.mean(self.episode_results, axis=0)
 
         return tuple(mean)
+
+
+def aggregate_head_results(agent_dir: str, num_heads: int, seeds: list[int]):
+    agent_path = Path(agent_dir)
+    head_results_dir = agent_path / HEADS_DIR
+    head_results_dir.mkdir(exist_ok=True)
+
+    for h in range(num_heads):
+        seeds_results = []
+        step_intervals = None
+
+        for s in seeds:
+            csv_path = (
+                agent_path
+                / f"{SEEDS_DIR}/seed_{s}/{HEADS_DIR}/h{h}/{VALIDATION_RESULTS_FILE}"
+            )
+            if not csv_path.exists():
+                print(f"Warning: missing {csv_path}")
+                continue
+
+            df = pd.read_csv(csv_path, index_col=TRAINING_STEP_COL)
+            if step_intervals is None:
+                step_intervals = df.index.to_list()
+            seeds_results.append(df.values)
+
+        if not seeds_results:
+            print(f"No results for head {h}")
+            continue
+
+        out_dir = head_results_dir / f"h{h}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        save_seed_totals(
+            seeds_results,
+            dir=out_dir,
+            step_intervals=step_intervals,
+        )
+        print(f"Saved head {h} aggregates → {out_dir}")
 
 
 def save_seed_totals(

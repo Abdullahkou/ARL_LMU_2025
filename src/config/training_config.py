@@ -1,6 +1,5 @@
 ########################### CONSTANTS #################################
 
-import argparse
 import json
 import os
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
@@ -16,6 +15,7 @@ VALIDATION_RESULTS_DIR = "Validation_Results"
 TRAINING_RESULTS_DIR = "Training_Results"
 MODELS_DIR = "models"
 SEEDS_DIR = "seeds"
+HEADS_DIR = "head_results"
 
 CHECKPOINT_PREFIX = "checkpoint_"
 INTERMEDIATE_RESULTS_PREFIX = "eval_"
@@ -151,6 +151,8 @@ class TrainingConfig:
     record_training: bool = True
     train_log_phases: int = 40
 
+    record_heads: bool = True
+
 
 def save_training_config(config: TrainingConfig, dir: str):
     if not os.path.exists(dir):
@@ -162,8 +164,7 @@ def save_training_config(config: TrainingConfig, dir: str):
         yaml.safe_dump(dict, file, indent=4)
 
 
-def load_training_config(dir: str = "src",
-                         training_args: dict[str, Any] | None = None):
+def load_training_config(dir: str = "src", training_args: dict[str, Any] | None = None):
     file_path = f"{dir}/training_config.yaml"
 
     if not os.path.exists(file_path):
@@ -175,7 +176,7 @@ def load_training_config(dir: str = "src",
 
     # Nur existierende Keys überschreiben (strict)
     if training_args:
-        cfg = apply_overrides(cfg, training_args)   # <--- HIER auf dem Dict
+        cfg = apply_overrides(cfg, training_args)  # <--- HIER auf dem Dict
 
     json_format = json.dumps(cfg, cls=CustomJSONEncoder, indent=4)
     print(f"Train config:\n {json_format}\n")
@@ -184,7 +185,9 @@ def load_training_config(dir: str = "src",
     return deserialize(TrainingConfig, cfg)
 
 
-def apply_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+def apply_overrides(
+    config: dict[str, Any], overrides: dict[str, Any]
+) -> dict[str, Any]:
     if not overrides:
         return config
 
@@ -199,7 +202,6 @@ def apply_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> dict[s
         if value is None or value == "":
             continue
 
-
         # 2) Strikt durch existierende Dict-Pfade navigieren
         parts = dotted.split(".")
         cur: dict[str, Any] = config
@@ -207,7 +209,9 @@ def apply_overrides(config: dict[str, Any], overrides: dict[str, Any]) -> dict[s
             if p not in cur:
                 raise KeyError(f"Unbekannter Key-Pfad: '{dotted}' (fehlend: '{p}')")
             if not isinstance(cur[p], dict):
-                raise TypeError(f"Pfad kollidiert mit Nicht-Dict bei '{p}' für Key '{dotted}'")
+                raise TypeError(
+                    f"Pfad kollidiert mit Nicht-Dict bei '{p}' für Key '{dotted}'"
+                )
             cur = cur[p]  # type: ignore[assignment]
 
         # 3) Letztes Segment MUSS existieren
