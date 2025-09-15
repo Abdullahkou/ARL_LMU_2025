@@ -78,8 +78,8 @@ class QNetwork(nn.Module):
                 qs.append(v + A_centered)  # [B, n_actions]
             out = torch.stack(qs, dim=1)  # [B, n_heads, n_actions]
 
-        if self.n_heads == 1:
-            out = out[:, 0]  # [B, n_actions]
+        # if self.n_heads == 1:
+        #     out = out[:, 0]  # [B, n_actions]
         return out
 
 
