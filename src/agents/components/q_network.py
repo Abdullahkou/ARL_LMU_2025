@@ -1,6 +1,8 @@
 # networks/q_network.py
 from __future__ import annotations
+
 from typing import Tuple
+
 import torch
 import torch.nn as nn
 
@@ -62,6 +64,10 @@ class QNetwork(nn.Module):
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # ensure x is (batch_size, obs_dim)
+        if x.ndim == 1:
+            x = x.unsqueeze(-1)
+
         if x.dim() > 2:
             x = x.view(x.size(0), -1)
         z = self.encoder(x)
@@ -121,6 +127,10 @@ class IndependentQNetwork(nn.Module):
                 self.heads.append(nn.ModuleDict({"v": v_head, "a": a_head}))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # ensure x is (batch_size, obs_dim)
+        if x.ndim == 1:
+            x = x.unsqueeze(-1)
+
         if x.dim() > 2:
             x = x.view(x.size(0), -1)
 

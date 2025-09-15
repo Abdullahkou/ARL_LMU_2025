@@ -164,9 +164,6 @@ class DQNAgent(IAgent):
         num_heads = self.hp.n_q_heads
         obs_t = torch.as_tensor(obs, dtype=torch.float32, device=self.device)
 
-        # ensure x is (batch_size, obs_dim)
-        if obs_t.ndim == 1:
-            obs_t = obs_t.unsqueeze(-1)
         q_values: torch.Tensor = self.q_net(obs_t)
 
         if q_values.ndim == 3:
