@@ -5,62 +5,52 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from config.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE
-from utils.logging import REWARD, STEPS
+from utils.logging import REWARD, STEPS, VALUE_ERROR
+
+VALIDATION = "Validation_Results"
+TRAINING = "Training_Results"
 
 
 def plot_results(
-    agents_to_plot: dict[str, tuple[str, str | None]],
+    results_to_plot,
     save_dir: str,
+    is_training_result=False,
     interval_x_axis: int | None = 5,
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    results_to_plot = dict[str, tuple[pd.DataFrame, pd.DataFrame | None]]()
+    x_vals = list(results_to_plot.values())[0][0].index
+    x_label = f"{'Training' if is_training_result else 'Validation'} Steps"
 
-    x_vals = None  # common x basis among all dfs
-    for agent_name, (mean_file, std_file) in agents_to_plot.items():
-        mean_df = pd.read_csv(
-            mean_file, index_col=0, dtype=str
-        )  # read as str to avoid errors on parse
-        mean_df = mean_df.apply(
-            pd.to_numeric, errors="coerce"
-        )  # non parsable values coerced to nan
-        mean_df = mean_df.ffill().bfill()  # fill in nans colwise
-        mean = mean_df
+    cols = [
+        (REWARD, "Reward", f"{'training' if is_training_result else 'validation'}_reward.png"),
+    ]
+    if is_training_result:
+        cols.append(
+            (VALUE_ERROR, "Value Error", f"{'training' if is_training_result else 'validation'}_value_error.png")
+        )
+    else:
+        cols.append(
+            (STEPS, "Steps", f"{'training' if is_training_result else 'validation'}_steps.png"),
+        )
 
-        std = None
-        if std_file is not None:
-            # same as above
-            std = pd.read_csv(std_file, index_col=0, dtype=str)
-            std = std.apply(pd.to_numeric, errors="coerce")
-            std = std.ffill().bfill()
-
-        results_to_plot[agent_name] = (mean, std)
-
-        # init x_vals
-        if x_vals is None:
-            x_vals = mean_df.index.values
-
-    x_label = "Training Steps"
-
-    for col_name, title, file_name in [
-        (STEPS, "Steps", "steps.png"),
-        (REWARD, "Reward", "reward.png"),
-    ]:
+    for col_name, title, file_name in cols:
+        plt.rcParams["figure.figsize"] = (12, 7)
         plt.margins(x=0)
         plt.title(title)
 
         plt.xlabel(x_label)
         plt.ylabel(col_name)
-
         for idx, (agent_name, (means, stds)) in enumerate(results_to_plot.items()):
-            mean = means[col_name].values
+            if col_name not in means:
+                continue
+            mean = means[col_name].values.astype(float)
+            if not np.isfinite(mean).any():
+                continue
             std = stds[col_name].values if stds is not None else None
             # random agent represented by horizontal line due to no training progress
             if agent_name == RANDOM_AGENT:
-                std = None  # no std
-
                 plt.axhline(
                     y=np.nanmean(mean, axis=0),
                     linestyle="--",
@@ -91,18 +81,33 @@ def plot_results(
         plt.clf()
 
 
+def read_csv(path_to_file):
+    return pd.read_csv(path_to_file, index_col=0, dtype=str).apply(pd.to_numeric, errors="coerce")
+
+
+def load_csvs(base_dir, algos_to_plot, load_training_csvs=False):
+    results_to_plot = {}
+    for algo_name in algos_to_plot:
+        results_dir = f"{base_dir}/{algo_name}/{TRAINING if load_training_csvs else VALIDATION}/"
+        path_to_mean = f"{results_dir}/{SMA_MEAN_FILE}"
+        path_to_std = f"{results_dir}/{SMA_STD_FILE}"
+
+        mean_df = read_csv(path_to_mean)
+        std_df = read_csv(path_to_std)
+        results_to_plot[algo_name] = (mean_df, std_df)
+    return results_to_plot
+
+
 def main():
-    base_dir = "results/test/LunarLander-v3/100.0K"
+    base_dir = "results/LunarLander-v3/1.0M"
+    algos_to_plot = ["CUSTOM_DQN", "SB3_DQN", "SB3_PPO", "RANDOM"]
     save_dir = f"{base_dir}/_plots"
 
-    agents = {
-        "NOT_RANDOM": (
-            f"{base_dir}/RANDOM/Validation_Results/{SMA_MEAN_FILE}",
-            f"{base_dir}/RANDOM/Validation_Results/{SMA_STD_FILE}",
-        )
-    }
+    plot_training_results = True  # set false to plot eval results
+    results_to_plot = load_csvs(base_dir, algos_to_plot, load_training_csvs=plot_training_results)
 
-    plot_results(agents, save_dir=save_dir)
+    # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
+    plot_results(results_to_plot, save_dir=save_dir, is_training_result=plot_training_results)
 
 
 if __name__ == "__main__":
