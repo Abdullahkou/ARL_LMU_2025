@@ -7,6 +7,7 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 
+from agents.dqn_agent import DQNAgent
 from agents.wrapperAgent import WrapperAgent
 from config.training_config import (
     HEADS_DIR,
@@ -51,6 +52,7 @@ def train(
     should_record_heads = (
         training_config.record_heads
         and training_config.algo_config.algorithm == Algorithm.CUSTOM_DQN
+        and training_config.algo_config.hyper_params.n_q_heads > 1
     )
 
     model_name = training_config.algo_config.algorithm.value
@@ -108,38 +110,38 @@ def train(
 
             # record heads
             if should_record_heads:
+                assert isinstance(wrapperAgent.agent, DQNAgent)
+
                 dqn_agent = wrapperAgent.agent
                 num_heads = dqn_agent.hp.n_q_heads
 
-                if num_heads > 1:
-                    eval_env_per_head: gym.vector.VectorEnv = gym.make_vec(
-                        id=env_id, num_envs=num_heads
-                    )
-                    eval_env_per_head.reset(seed=seed)
+                eval_env_per_head: gym.vector.VectorEnv = gym.make_vec(
+                    id=env_id, num_envs=num_heads
+                )
+                eval_env_per_head.reset(seed=seed)
 
-                    heads_dirs = [
-                        f"{seed_result_dir}/{HEADS_DIR}/h{head_idx}"
-                        for head_idx in range(num_heads)
-                    ]
+                heads_dirs = [
+                    f"{seed_result_dir}/{HEADS_DIR}/h{head_idx}"
+                    for head_idx in range(num_heads)
+                ]
 
-                    validation_results_files = [
-                        f"{head_dir}/{VALIDATION_RESULTS_FILE}"
-                        for head_dir in heads_dirs
-                    ]
+                validation_results_files = [
+                    f"{head_dir}/{VALIDATION_RESULTS_FILE}" for head_dir in heads_dirs
+                ]
 
-                    eval_heads_fn = partial(
-                        eval_checkpoints_heads,
-                        dqnAgent=dqn_agent,
-                        eval_env_per_head=eval_env_per_head,
-                        num_episodes=num_episodes,
-                        eval_schedule=eval_schedule,
-                        save_files=validation_results_files,
-                        intermediate_results_dirs=heads_dirs
-                        if save_intermediate_results
-                        else None,
-                    )
+                eval_heads_fn = partial(
+                    eval_checkpoints_heads,
+                    dqnAgent=dqn_agent,
+                    eval_env_per_head=eval_env_per_head,
+                    num_episodes=num_episodes,
+                    eval_schedule=eval_schedule,
+                    save_files=validation_results_files,
+                    intermediate_results_dirs=heads_dirs
+                    if save_intermediate_results
+                    else None,
+                )
 
-                    dqn_agent.set_indiviudal_head_eval_fn(eval_heads_fn=eval_heads_fn)
+                dqn_agent.set_indiviudal_head_eval_fn(eval_heads_fn=eval_heads_fn)
 
             validation_results_files = f"{seed_result_dir}/{VALIDATION_RESULTS_FILE}"
 
