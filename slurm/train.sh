@@ -11,4 +11,5 @@ cd ..
 
 uv version
 
+# dont forget to adjust the postfix!!
 uv run src/train.py --save_postfix="1qh" seeds=[0,1,2,3,4,5,6,7,8,9] algo_config.hyper_params.n_q_heads=1 env_id=LunarLander-v3 algo_config.algorithm=Custom_DQN steps=1000000

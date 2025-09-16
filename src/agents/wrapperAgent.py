@@ -7,21 +7,23 @@ from agents.baseAgent import IAgent
 from agents.dqn_agent import DQNAgent
 from agents.randomAgent import RandomAgent
 from agents.sb3Wrapper import SB3Wrapper
-from config.training_config import AlgoConfig, Algorithm
+from config.training_config import Algorithm, TrainingConfig
 from utils.logging import TrainLogger
 
 
 class WrapperAgent:
     def __init__(
         self,
-        config: AlgoConfig,
+        train_config: TrainingConfig,
         train_env_factory: Callable[[], Env],
         eval_step_intervals: list[int] = None,
         seed: int = 69,
         device: str = "cpu",
     ):
+        algo_config = train_config.algo_config
+
         self.agent: IAgent = None
-        match config.algorithm:
+        match algo_config.algorithm:
             case Algorithm.RANDOM:
                 self.agent = RandomAgent(
                     seed=seed,
@@ -30,14 +32,14 @@ class WrapperAgent:
                 )
             case Algorithm.CUSTOM_DQN:
                 self.agent = DQNAgent(
-                    config=config,
+                    config=algo_config,
                     train_env_factory=train_env_factory,
                     seed=seed,
                     device=device,
                 )
             case _:
                 self.agent = SB3Wrapper(
-                    config=config,
+                    train_config=train_config,
                     train_env_factory=train_env_factory,
                     seed=seed,
                     device=device,

@@ -6,7 +6,7 @@ from stable_baselines3 import A2C, DQN, PPO, TD3
 from stable_baselines3.common.callbacks import BaseCallback
 
 from agents.baseAgent import IAgent
-from config.training_config import AlgoConfig, Algorithm
+from config.training_config import Algorithm, TrainingConfig
 from utils.logging import TrainLogger
 
 
@@ -15,26 +15,75 @@ class SB3Wrapper(IAgent):
 
     def __init__(
         self,
-        config: AlgoConfig,
+        train_config: TrainingConfig,
         train_env_factory: Callable[[], Env],
         seed: int = 69,
         device: str = "cpu",
     ) -> None:
-        """Remember to close your train env constructed from factory at the end of learn!"""
         env = train_env_factory()
+
+        config = train_config.algo_config
+
+        hyper_params = config.hyper_params
+        hp_dict = {
+            "learning_rate": hyper_params.learning_rate,
+            "buffer_size": hyper_params.buffer_size,
+            "learning_starts": hyper_params.learning_starts,
+            "batch_size": hyper_params.batch_size,
+            "tau": hyper_params.tau,
+            "gamma": hyper_params.gamma,
+            "train_freq": hyper_params.train_freq,
+            "gradient_steps": hyper_params.gradient_steps,
+            "target_update_interval": hyper_params.target_update_interval,
+            "exploration_fraction": hyper_params.epsilon_decay_steps
+            / train_config.steps,
+            "exploration_initial_eps": hyper_params.max_epsilon,
+            "exploration_final_eps": hyper_params.min_epsilon,
+            "max_grad_norm": hyper_params.clip_grad_norm,
+        }
 
         self.sb3Agent = None
         match config.algorithm:
             case Algorithm.SB3_DQN:
-                self.sb3Agent = DQN("MlpPolicy", env, seed=seed, device=device)
+                self.sb3Agent = DQN(
+                    policy="MlpPolicy",
+                    env=env,
+                    seed=seed,
+                    device=device,
+                    **hp_dict,
+                )
             case Algorithm.SB3_A2C:
-                self.sb3Agent = A2C("MlpPolicy", env, seed=seed, device=device)
+                self.sb3Agent = A2C(
+                    policy="MlpPolicy",
+                    env=env,
+                    seed=seed,
+                    device=device,
+                    **hp_dict,
+                )
             case Algorithm.SB3_TD3:
-                self.sb3Agent = TD3("MlpPolicy", env, seed=seed, device=device)
+                self.sb3Agent = TD3(
+                    policy="MlpPolicy",
+                    env=env,
+                    seed=seed,
+                    device=device,
+                    **hp_dict,
+                )
             case Algorithm.SB3_PPO:
-                self.sb3Agent = PPO("MlpPolicy", env, seed=seed, device=device)
+                self.sb3Agent = PPO(
+                    policy="MlpPolicy",
+                    env=env,
+                    seed=seed,
+                    device=device,
+                    **hp_dict,
+                )
             case _:
-                self.sb3Agent = DQN("MlpPolicy", env, seed=seed, device=device)
+                self.sb3Agent = DQN(
+                    policy="MlpPolicy",
+                    env=env,
+                    seed=seed,
+                    device=device,
+                    **hp_dict,
+                )
 
     def learn(
         self,

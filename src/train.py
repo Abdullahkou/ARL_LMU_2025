@@ -96,7 +96,7 @@ def train(
             eval_env.reset(seed=training_config.eval_env_seed)
 
             wrapperAgent = WrapperAgent(
-                config=training_config.algo_config,
+                train_config=training_config,
                 train_env_factory=train_env_factory,
                 eval_step_intervals=eval_step_intervals,
                 seed=seed,
