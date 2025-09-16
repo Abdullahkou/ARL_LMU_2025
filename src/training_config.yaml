@@ -23,6 +23,7 @@ algo_config:
         tau: 1.0
         train_freq: 1
         use_ebql: true
+        ebql_strict: true
     ignore_hyper_params: false
 env_id: LunarLander-v3
 eval_env_seed: 3
@@ -37,4 +38,3 @@ seeds:
 steps: 1000000
 train_env_seed: 2
 train_log_phases: 40
-ebql_strict: true
