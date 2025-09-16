@@ -5,11 +5,12 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import re
 
-from config.training_config import RANDOM_AGENT, SMA_MEAN_FILE, SMA_STD_FILE, HEADS_DIR
+from config.training_config import SMA_MEAN_FILE, SMA_STD_FILE, HEADS_DIR
 from utils.logging import REWARD, STEPS, VALUE_ERROR
 
 VALIDATION = "Validation_Results"
 TRAINING = "Training_Results"
+RANDOM_AGENT = "RANDOM"
 
 
 def plot_results(
@@ -46,8 +47,11 @@ def plot_results(
 
         plt.xlabel(x_label)
         plt.ylabel(col_name)
+
         for idx, (agent_name, (means, stds)) in enumerate(results_to_plot.items()):
             if col_name not in means:
+                continue
+            if col_name == VALUE_ERROR and ("SB3" in agent_name.upper() or agent_name == "RANDOM"):
                 continue
             mean = means[col_name].values.astype(float)
             if not np.isfinite(mean).any():
@@ -116,9 +120,9 @@ def load_csvs_heads(base_dir):
 
 
 def main():
-    env_name = "LunarLander-v3"  # just for plot title
+    env_name = "FrozenLake-v1"  # just for plot title
     base_dir = f"results/{env_name}/1.0M"
-    algos_to_plot = ["Custom_DQN_3qh", "SB3_PPO", "SB3_DQN", "RANDOM"]
+    algos_to_plot = ["Custom_DQN_3qh", "SB3_DQN", "RANDOM"]
     save_dir = f"{base_dir}/_plots"
 
     plot_training_results = True  # set false to plot eval results
