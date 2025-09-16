@@ -23,23 +23,26 @@ class SB3Wrapper(IAgent):
         env = train_env_factory()
 
         config = train_config.algo_config
+        hp = config.hyper_params
 
-        hyper_params = config.hyper_params
-        hp_dict = {
-            "learning_rate": hyper_params.learning_rate,
-            "buffer_size": hyper_params.buffer_size,
-            "learning_starts": hyper_params.learning_starts,
-            "batch_size": hyper_params.batch_size,
-            "tau": hyper_params.tau,
-            "gamma": hyper_params.gamma,
-            "train_freq": hyper_params.train_freq,
-            "gradient_steps": hyper_params.gradient_steps,
-            "target_update_interval": hyper_params.target_update_interval,
-            "exploration_fraction": hyper_params.epsilon_decay_steps
-            / train_config.steps,
-            "exploration_initial_eps": hyper_params.max_epsilon,
-            "exploration_final_eps": hyper_params.min_epsilon,
-            "max_grad_norm": hyper_params.clip_grad_norm,
+        base_qlearn_dict = {
+            "learning_rate": hp.learning_rate,
+            "buffer_size": hp.buffer_size,
+            "learning_starts": hp.learning_starts,
+            "batch_size": hp.batch_size,
+            "tau": hp.tau,
+            "gamma": hp.gamma,
+            "train_freq": hp.train_freq,
+            "gradient_steps": hp.gradient_steps,
+        }
+
+        dqn_dict = {
+            **base_qlearn_dict,
+            "target_update_interval": hp.target_update_interval,
+            "exploration_fraction": hp.epsilon_decay_steps / train_config.steps,
+            "exploration_initial_eps": hp.max_epsilon,
+            "exploration_final_eps": hp.min_epsilon,
+            "max_grad_norm": hp.clip_grad_norm,
         }
 
         self.sb3Agent = None
@@ -50,15 +53,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
-                    **hp_dict,
-                )
-            case Algorithm.SB3_A2C:
-                self.sb3Agent = A2C(
-                    policy="MlpPolicy",
-                    env=env,
-                    seed=seed,
-                    device=device,
-                    **hp_dict,
+                    **dqn_dict,
                 )
             case Algorithm.SB3_TD3:
                 self.sb3Agent = TD3(
@@ -66,7 +61,17 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
-                    **hp_dict,
+                    **base_qlearn_dict,
+                )
+            case Algorithm.SB3_A2C:
+                self.sb3Agent = A2C(
+                    policy="MlpPolicy",
+                    env=env,
+                    seed=seed,
+                    device=device,
+                    learning_rate=hp.learning_rate,
+                    gamma=hp.gamma,
+                    max_grad_norm=hp.clip_grad_norm,
                 )
             case Algorithm.SB3_PPO:
                 self.sb3Agent = PPO(
@@ -74,7 +79,10 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
-                    **hp_dict,
+                    learning_rate=hp.learning_rate,
+                    gamma=hp.gamma,
+                    max_grad_norm=hp.clip_grad_norm,
+                    batch_size=hp.batch_size,
                 )
             case _:
                 self.sb3Agent = DQN(
@@ -82,7 +90,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
-                    **hp_dict,
+                    **dqn_dict,
                 )
 
     def learn(
