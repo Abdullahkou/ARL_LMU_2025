@@ -15,6 +15,7 @@ TRAINING = "Training_Results"
 def plot_results(
     results_to_plot,
     save_dir: str,
+    env_name="",
     is_training_result=False,
     interval_x_axis: int | None = 5,
 ):
@@ -41,7 +42,7 @@ def plot_results(
     for col_name, title, file_name in cols:
         plt.rcParams["figure.figsize"] = (12, 7)
         plt.margins(x=0)
-        plt.title(title)
+        plt.title(f"{env_name} {'Training' if is_training_result else 'Validation'} {title}")
 
         plt.xlabel(x_label)
         plt.ylabel(col_name)
@@ -115,15 +116,16 @@ def load_csvs_heads(base_dir):
 
 
 def main():
-    base_dir = "results/LunarLander-v3/1.0M"
-    algos_to_plot = ["CUSTOM_DQN_3qh"]#, "SB3_DQN", "SB3_PPO", "RANDOM"]
+    env_name = "LunarLander-v3"  # just for plot title
+    base_dir = f"results/{env_name}/1.0M"
+    algos_to_plot = ["Custom_DQN_3qh", "SB3_PPO", "SB3_DQN", "RANDOM"]
     save_dir = f"{base_dir}/_plots"
 
-    plot_training_results = False  # set false to plot eval results
-    results_to_plot = load_csvs(base_dir, algos_to_plot, load_training_csvs=plot_training_results, load_head_results=True)
+    plot_training_results = True  # set false to plot eval results
+    results_to_plot = load_csvs(base_dir, algos_to_plot, load_training_csvs=plot_training_results, load_head_results=False)
 
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
-    plot_results(results_to_plot, save_dir=save_dir, is_training_result=plot_training_results)
+    plot_results(results_to_plot, save_dir=save_dir, is_training_result=plot_training_results, env_name=env_name)
 
 
 if __name__ == "__main__":
