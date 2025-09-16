@@ -1,5 +1,9 @@
 # ARL_LMU_2025 Ensemble Trainer
 
+## Setup
+
+run ```uv sync``` to install the ``venv`. In case theres a build problem with `gymnasium[box2d]`, remove it first from the pyproject.toml file, run install and activate the venv. Then add it again and run install again. The venv might be necessary to use swig for install!
+
 ## Overview
 
 ARL_LMU_2025 is an ensemble training project designed for machine learning research and experimentation. It enables users to train, evaluate, and compare multiple models as an ensemble, improving predictive performance and robustness.
