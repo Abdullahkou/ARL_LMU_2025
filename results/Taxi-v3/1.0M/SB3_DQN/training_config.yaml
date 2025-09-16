@@ -1,5 +1,5 @@
 algo_config:
-    algorithm: SB3_DQN
+    algorithm: SB3_DQN_3qh
     hyper_params:
         batch_size: 256
         buffer_size: 30000
