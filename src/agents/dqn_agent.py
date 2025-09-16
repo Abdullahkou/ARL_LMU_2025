@@ -40,6 +40,7 @@ class DQNHyperParams:
     hidden_sizes: Tuple[int, ...] = (256, 256)  # MLP
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
     independent_heads: bool = False  # shared encoder vs. completely independent
+    ebql_strict: bool = True  # use strict EBQL (one head update per step)
 
 
 class DQNAgent(IAgent):
@@ -109,6 +110,9 @@ class DQNAgent(IAgent):
 
         print(self.q_net)
         print(self.target_q_net)
+        print("-----")
+        ebql_strict = getattr(self.hp, "ebql_strict", False)
+        print(f"EBQL strict mode: {ebql_strict}")
 
         # self.q_net = QNetwork(
         #     obs_shape=self.obs_shape,
@@ -445,6 +449,86 @@ class DQNAgent(IAgent):
         return int(action)
 
     # _sgd_step MIT EBQL
+    # def _sgd_step(self) -> Dict[str, float]:
+    #     batch = self._sample_batch()
+    #     obs, actions, rewards, next_obs, dones, masks = (
+    #         batch["obs"],
+    #         batch["actions"],
+    #         batch["rewards"],
+    #         batch["next_obs"],
+    #         batch["dones"],
+    #         batch["masks"],
+    #     )
+
+    #     loss_total = 0.0
+    #     head_losses = []
+
+    #     for h in range(self.hp.n_q_heads):
+    #         mask = torch.as_tensor(masks[:, h], dtype=torch.float32, device=self.device)
+    #         if mask.sum() == 0:  # kein Sample für diesen Head
+    #             continue
+
+    #         # Q(s,a) für diesen Head
+    #         q: torch.Tensor = self.q_net(obs)[:, h]  # [B, n_actions]
+    #         q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
+
+    #         with torch.no_grad():
+    #             if self.hp.double_q:
+    #                 # Actionwahl immer noch Head-spezifisch
+    #                 q_next_online = self.q_net(next_obs)[:, h]
+    #                 next_actions = torch.argmax(q_next_online, dim=1)
+
+    #                 if self.hp.use_ebql:
+    #                     # Ensemble-Target: Mittelung über alle Heads
+    #                     q_next_targets = self.target_q_net(
+    #                         next_obs
+    #                     )  # [B, n_heads, n_actions]
+    #                     q_all = []
+    #                     for u in range(self.hp.n_q_heads):
+    #                         q_all.append(
+    #                             q_next_targets[:, u]
+    #                             .gather(1, next_actions.view(-1, 1))
+    #                             .squeeze(1)
+    #                         )
+    #                     q_next = torch.stack(q_all, dim=1).mean(dim=1)  # [B]
+    #                 else:
+    #                     q_next_target = self.target_q_net(next_obs)[:, h]
+    #                     q_next = q_next_target.gather(
+    #                         1, next_actions.view(-1, 1)
+    #                     ).squeeze(1)
+    #             else:
+    #                 if self.hp.use_ebql:
+    #                     # Ensemble-Target: max über Actions und Mittelung über Heads
+    #                     q_next_targets = self.target_q_net(
+    #                         next_obs
+    #                     )  # [B, n_heads, n_actions]
+    #                     q_next = q_next_targets.max(dim=2).values.mean(dim=1)
+    #                 else:
+    #                     q_next_target = self.target_q_net(next_obs)[:, h]
+    #                     q_next = q_next_target.max(dim=1).values
+
+    #             target = rewards + (1.0 - dones) * self.hp.gamma * q_next
+
+    #         # Maskierter Loss
+    #         loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
+    #         loss_total += loss
+    #         head_losses.append(loss.item())
+
+    #     # Backprop über Summe der Head-Losses
+    #     self.optimizer.zero_grad(set_to_none=True)
+    #     loss_total.backward()
+    #     if self.hp.clip_grad_norm is not None:
+    #         nn.utils.clip_grad_norm_(self.q_net.parameters(), self.hp.clip_grad_norm)
+    #     self.optimizer.step()
+
+    #     head_losses = np.array(head_losses)
+
+    #     return {
+    #         "train/loss": float(loss_total.item()),
+    #         "train/head_losses": head_losses.mean(),
+    #         "train/epsilon": float(self.epsilon),
+    #     }
+
     def _sgd_step(self) -> Dict[str, float]:
         batch = self._sample_batch()
         obs, actions, rewards, next_obs, dones, masks = (
@@ -459,43 +543,72 @@ class DQNAgent(IAgent):
         loss_total = 0.0
         head_losses = []
 
-        for h in range(self.hp.n_q_heads):
+        # --- Unterschied: Paper-EBQL vs. Approximation ---
+        # Paper (ebql_strict=True): nur EIN zufälliger Head wird geupdated (Algorithmus 1 in EBQL).
+        #   Vorteil: bessere Exploration durch Diversität der Heads.
+        #   Nachteil: höherer Varianz im Update, weniger stabile Performance.
+        #
+        # Approximation (ebql_strict=False): ALLE Heads werden geupdated und Targets nutzen
+        # ihre jeweils eigene beste Aktion -> gemittelter Wert.
+        #   Vorteil: stabiler, effizienter in der Praxis, oft bessere Performance.
+        #   Nachteil: weniger theoretisch korrekt, weniger Diversität zwischen Heads.
+        #
+
+        ebql_strict = getattr(self.hp, "ebql_strict", False)
+
+        if ebql_strict:
+            # ---- Strict EBQL: nur ein zufälliger Head trainieren ----
+            h = self.rng.integers(0, self.hp.n_q_heads)
             mask = torch.as_tensor(masks[:, h], dtype=torch.float32, device=self.device)
-            if mask.sum() == 0:  # kein Sample für diesen Head
-                continue
+            if mask.sum() > 0:
+                q = self.q_net(obs)[:, h]  # [B, n_actions]
+                q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
 
-            # Q(s,a) für diesen Head
-            # TODO: not working for 1 head
-            q: torch.Tensor = self.q_net(obs)[:, h]  # [B, n_actions]
-            q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
-
-            with torch.no_grad():
-                if self.hp.double_q:
-                    # Actionwahl immer noch Head-spezifisch
+                with torch.no_grad():
+                    # Actionwahl mit Head h
                     q_next_online = self.q_net(next_obs)[:, h]
                     next_actions = torch.argmax(q_next_online, dim=1)
 
+                    # Committee bewertet diese Aktion
+                    q_next_targets = self.target_q_net(
+                        next_obs
+                    )  # [B, n_heads, n_actions]
+                    q_committee = []
+                    for u in range(self.hp.n_q_heads):
+                        if u == h:
+                            continue  # Paper: Committee ohne den aktiven Head
+                        q_committee.append(
+                            q_next_targets[:, u]
+                            .gather(1, next_actions.view(-1, 1))
+                            .squeeze(1)
+                        )
+                    # q_next = torch.stack(q_committee, dim=1).mean(dim=1)
+                    q_next = torch.stack(q_committee, dim=1).sum(dim=1) / (
+                        self.hp.n_q_heads - 1
+                    )
+
+                    target = rewards + (1.0 - dones) * self.hp.gamma * q_next
+
+                # Loss nur für den aktiven Head
+                loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
+                loss_total += loss
+                head_losses.append(loss.item())
+
+        else:
+            # ---- Approximation: Update für alle Heads (aktueller Code) ----
+            for h in range(self.hp.n_q_heads):
+                mask = torch.as_tensor(
+                    masks[:, h], dtype=torch.float32, device=self.device
+                )
+                if mask.sum() == 0:
+                    continue
+
+                q = self.q_net(obs)[:, h]  # [B, n_actions]
+                q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
+
+                with torch.no_grad():
                     if self.hp.use_ebql:
-                        # Ensemble-Target: Mittelung über alle Heads
-                        q_next_targets = self.target_q_net(
-                            next_obs
-                        )  # [B, n_heads, n_actions]
-                        q_all = []
-                        for u in range(self.hp.n_q_heads):
-                            q_all.append(
-                                q_next_targets[:, u]
-                                .gather(1, next_actions.view(-1, 1))
-                                .squeeze(1)
-                            )
-                        q_next = torch.stack(q_all, dim=1).mean(dim=1)  # [B]
-                    else:
-                        q_next_target = self.target_q_net(next_obs)[:, h]
-                        q_next = q_next_target.gather(
-                            1, next_actions.view(-1, 1)
-                        ).squeeze(1)
-                else:
-                    if self.hp.use_ebql:
-                        # Ensemble-Target: max über Actions und Mittelung über Heads
+                        # Ensemble-Target: jeder Head wählt eigene Aktion, Mittelung danach
                         q_next_targets = self.target_q_net(
                             next_obs
                         )  # [B, n_heads, n_actions]
@@ -504,25 +617,24 @@ class DQNAgent(IAgent):
                         q_next_target = self.target_q_net(next_obs)[:, h]
                         q_next = q_next_target.max(dim=1).values
 
-                target = rewards + (1.0 - dones) * self.hp.gamma * q_next
+                    target = rewards + (1.0 - dones) * self.hp.gamma * q_next
 
-            # Maskierter Loss
-            loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
-            loss_total += loss
-            head_losses.append(loss.item())
+                loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
+                loss_total += loss
+                head_losses.append(loss.item())
 
-        # Backprop über Summe der Head-Losses
+        # Backprop
         self.optimizer.zero_grad(set_to_none=True)
         loss_total.backward()
         if self.hp.clip_grad_norm is not None:
             nn.utils.clip_grad_norm_(self.q_net.parameters(), self.hp.clip_grad_norm)
         self.optimizer.step()
 
-        head_losses = np.array(head_losses)
-
         return {
             "train/loss": float(loss_total.item()),
-            "train/head_losses": head_losses.mean(),
+            "train/head_losses": float(np.mean(head_losses))
+            if len(head_losses) > 0
+            else 0.0,
             "train/epsilon": float(self.epsilon),
         }
 

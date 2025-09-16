@@ -18,7 +18,7 @@ algo_config:
         learning_starts: 3000
         max_epsilon: 0.5
         min_epsilon: 0.05
-        n_q_heads: 1
+        n_q_heads: 10
         target_update_interval: 1000
         tau: 1.0
         train_freq: 1
@@ -37,4 +37,3 @@ seeds:
 steps: 1000000
 train_env_seed: 2
 train_log_phases: 40
-ebql_strict: true
