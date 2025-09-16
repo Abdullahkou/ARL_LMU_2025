@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J DQN
+#SBATCH -J DQN_1
 #SBATCH -D ./
 #SBATCH --partition=All
 
@@ -11,4 +11,4 @@ cd ..
 
 uv version
 
-uv run src/train.py --save_postfix="3qh" algo_config.hyper_params.n_q_heads=3 env_id=Taxi-v3  algo_config.algorithm= steps=
+uv run src/train.py --save_postfix="1qh" seeds=[0,1,2,3,4,5,6,7,8,9] algo_config.hyper_params.n_q_heads=1 env_id=LunarLander-v3 algo_config.algorithm=Custom_DQN steps=1000000
