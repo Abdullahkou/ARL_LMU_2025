@@ -245,7 +245,7 @@ def main():
 
     training_args = parse_training_args(extras=extras)
 
-    base_dir = "results/test"
+    base_dir = "results"
 
     # automatically loads training_config from main directory!, creates if not exists
     train(
