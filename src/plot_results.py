@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from pathlib import Path
 import re
 
 from config.training_config import SMA_MEAN_FILE, SMA_STD_FILE, HEADS_DIR
@@ -51,7 +52,7 @@ def plot_results(
         for idx, (agent_name, (means, stds)) in enumerate(results_to_plot.items()):
             if col_name not in means:
                 continue
-            if col_name == VALUE_ERROR and ("SB3" in agent_name.upper() or agent_name == "RANDOM"):
+            if col_name == VALUE_ERROR and ("SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()):
                 continue
             mean = means[col_name].values.astype(float)
             if not np.isfinite(mean).any():
@@ -84,7 +85,6 @@ def plot_results(
         # Customize y-axis and x-axis to start at 0
         # plt.ylim(bottom=0)
         plt.xlim(left=0)
-
         plt.savefig(f"{save_dir}/{file_name}")
         plt.clf()
 
@@ -95,6 +95,8 @@ def read_csv(path_to_file):
 
 def load_csvs(base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False):
     results_to_plot = {}
+    if algos_to_plot is None:
+        algos_to_plot = os.listdir(base_dir)
     for algo_name in algos_to_plot:
         results_dir = f"{base_dir}/{algo_name}/{TRAINING if load_training_csvs else VALIDATION}/"
         path_to_mean = f"{results_dir}/{SMA_MEAN_FILE}"
@@ -115,22 +117,43 @@ def load_csvs(base_dir, algos_to_plot, load_training_csvs=False, load_head_resul
     return results_to_plot
 
 
-def load_csvs_heads(base_dir):
-    pass
+def load_seeds(base_dir, algo_name, load_train_results=False):
+    seeds_dir = f"{base_dir}/{algo_name}/seeds"
+    results_to_plot = {}
+    for seed in os.listdir(seeds_dir):
+        path_to_seed_csv = f"{seeds_dir}/{seed}/{'training_results.csv' if load_train_results else 'validation_results.csv'}"
+        mean_df = read_csv(path_to_seed_csv)
+        # This is a hack but it works: create a second df where every col except training steps is 0
+        # When we plot this using plot_results it wont have the highlighted interval
+        std_df = mean_df.copy()
+        std_df[mean_df.columns[0]] = 0
+        std_df[mean_df.columns[1]] = 0
+        results_to_plot[f"{algo_name}_{seed}"] = (mean_df, std_df)
+    return results_to_plot
+
+
+def plot_seeds():
+    env_name = "LunarLander-v3"  # just for plot title
+    base_dir = f"results/{env_name}/1.0M"
+    algo_name = "SB3_PPO"
+    seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
+    plot_training_results = False  # set false to plot eval results
+    results_to_plot = load_seeds(base_dir, algo_name, load_train_results=plot_training_results)
+    plot_results(results_to_plot, save_dir=seeds_save_dir, is_training_result=plot_training_results, env_name=env_name)
 
 
 def main():
-    env_name = "FrozenLake-v1"  # just for plot title
+    env_name = "LunarLander-v3"  # just for plot title
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = ["Custom_DQN_3qh", "SB3_DQN", "RANDOM"]
     save_dir = f"{base_dir}/_plots"
 
-    plot_training_results = True  # set false to plot eval results
-    results_to_plot = load_csvs(base_dir, algos_to_plot, load_training_csvs=plot_training_results, load_head_results=False)
-
+    plot_training_results = False  # set false to plot eval results
+    results_to_plot = load_csvs(base_dir, algos_to_plot=algos_to_plot, load_training_csvs=plot_training_results, load_head_results=False)
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(results_to_plot, save_dir=save_dir, is_training_result=plot_training_results, env_name=env_name)
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    plot_seeds()
