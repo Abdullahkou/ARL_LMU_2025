@@ -1,12 +1,11 @@
 import os
+import re
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from pathlib import Path
-import re
 
-from config.training_config import SMA_MEAN_FILE, SMA_STD_FILE, HEADS_DIR
+from config.training_config import HEADS_DIR, SMA_MEAN_FILE, SMA_STD_FILE
 from utils.logging import REWARD, STEPS, VALUE_ERROR
 
 VALIDATION = "Validation_Results"
@@ -27,24 +26,38 @@ def plot_results(
     x_vals = list(results_to_plot.values())[0][0].index
     x_label = f"{'Training' if is_training_result else 'Validation'} Steps"
 
-    heads_present = any(re.search(r'h\d', s) for s in results_to_plot.keys())
+    heads_present = any(re.search(r"h\d", s) for s in results_to_plot.keys())
 
     cols = [
-        (REWARD, "Reward", f"{'training' if is_training_result else 'validation'}_reward{'_with_heads' if heads_present else ''}.png")
+        (
+            REWARD,
+            "Reward",
+            f"{'training' if is_training_result else 'validation'}_reward{'_with_heads' if heads_present else ''}.png",
+        )
     ]
     if is_training_result:
         cols.append(
-            (VALUE_ERROR, "Value Error", f"{'training' if is_training_result else 'validation'}_value_error.png")
+            (
+                VALUE_ERROR,
+                "Value Error",
+                f"{'training' if is_training_result else 'validation'}_value_error.png",
+            )
         )
     else:
         cols.append(
-            (STEPS, "Steps", f"{'training' if is_training_result else 'validation'}_steps{'_with_heads' if heads_present else ''}.png")
+            (
+                STEPS,
+                "Steps",
+                f"{'training' if is_training_result else 'validation'}_steps{'_with_heads' if heads_present else ''}.png",
+            )
         )
 
     for col_name, title, file_name in cols:
         plt.rcParams["figure.figsize"] = (12, 7)
         plt.margins(x=0)
-        plt.title(f"{env_name} {'Training' if is_training_result else 'Validation'} {title}")
+        plt.title(
+            f"{env_name} {'Training' if is_training_result else 'Validation'} {title}"
+        )
 
         plt.xlabel(x_label)
         plt.ylabel(col_name)
@@ -52,7 +65,9 @@ def plot_results(
         for idx, (agent_name, (means, stds)) in enumerate(results_to_plot.items()):
             if col_name not in means:
                 continue
-            if col_name == VALUE_ERROR and ("SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()):
+            if col_name == VALUE_ERROR and (
+                "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
+            ):
                 continue
             mean = means[col_name].values.astype(float)
             if not np.isfinite(mean).any():
@@ -90,15 +105,21 @@ def plot_results(
 
 
 def read_csv(path_to_file):
-    return pd.read_csv(path_to_file, index_col=0, dtype=str).apply(pd.to_numeric, errors="coerce")
+    return pd.read_csv(path_to_file, index_col=0, dtype=str).apply(
+        pd.to_numeric, errors="coerce"
+    )
 
 
-def load_csvs(base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False):
+def load_csvs(
+    base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
+):
     results_to_plot = {}
     if algos_to_plot is None:
         algos_to_plot = os.listdir(base_dir)
     for algo_name in algos_to_plot:
-        results_dir = f"{base_dir}/{algo_name}/{TRAINING if load_training_csvs else VALIDATION}/"
+        results_dir = (
+            f"{base_dir}/{algo_name}/{TRAINING if load_training_csvs else VALIDATION}/"
+        )
         path_to_mean = f"{results_dir}/{SMA_MEAN_FILE}"
         path_to_std = f"{results_dir}/{SMA_STD_FILE}"
 
@@ -138,8 +159,15 @@ def plot_seeds():
     algo_name = "SB3_PPO"
     seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
     plot_training_results = False  # set false to plot eval results
-    results_to_plot = load_seeds(base_dir, algo_name, load_train_results=plot_training_results)
-    plot_results(results_to_plot, save_dir=seeds_save_dir, is_training_result=plot_training_results, env_name=env_name)
+    results_to_plot = load_seeds(
+        base_dir, algo_name, load_train_results=plot_training_results
+    )
+    plot_results(
+        results_to_plot,
+        save_dir=seeds_save_dir,
+        is_training_result=plot_training_results,
+        env_name=env_name,
+    )
 
 
 def main():
@@ -149,11 +177,21 @@ def main():
     save_dir = f"{base_dir}/_plots"
 
     plot_training_results = False  # set false to plot eval results
-    results_to_plot = load_csvs(base_dir, algos_to_plot=algos_to_plot, load_training_csvs=plot_training_results, load_head_results=False)
+    results_to_plot = load_csvs(
+        base_dir,
+        algos_to_plot=algos_to_plot,
+        load_training_csvs=plot_training_results,
+        load_head_results=False,
+    )
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
-    plot_results(results_to_plot, save_dir=save_dir, is_training_result=plot_training_results, env_name=env_name)
+    plot_results(
+        results_to_plot,
+        save_dir=save_dir,
+        is_training_result=plot_training_results,
+        env_name=env_name,
+    )
 
 
 if __name__ == "__main__":
-    #main()
+    # main()
     plot_seeds()
