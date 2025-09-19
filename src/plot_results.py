@@ -19,6 +19,7 @@ def plot_results(
     env_name="",
     is_training_result=False,
     interval_x_axis: int | None = 5,
+    color_in_std=True
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -89,7 +90,8 @@ def plot_results(
             if std is None:
                 continue
 
-            plt.fill_between(x_vals, mean - std, mean + std, alpha=0.3, color=f"C{idx}")
+            if color_in_std:
+                plt.fill_between(x_vals, mean - std, mean + std, alpha=0.3, color=f"C{idx}")
 
         plt.legend()
 
@@ -156,7 +158,7 @@ def load_seeds(base_dir, algo_name, load_train_results=False):
 def plot_seeds():
     env_name = "LunarLander-v3"  # just for plot title
     base_dir = f"results/{env_name}/1.0M"
-    algo_name = "SB3_PPO"
+    algo_name = ""
     seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
     plot_training_results = False  # set false to plot eval results
     results_to_plot = load_seeds(
@@ -173,7 +175,7 @@ def plot_seeds():
 def main():
     env_name = "LunarLander-v3"  # just for plot title
     base_dir = f"results/{env_name}/1.0M"
-    algos_to_plot = ["Custom_DQN_3qh", "SB3_DQN", "RANDOM"]
+    algos_to_plot = ["Custom_DQN_1qh", "Custom_DQN_3qh", "Custom_DQN_5qh", "SB3_DQN", "SB3_PPO", "RANDOM"]
     save_dir = f"{base_dir}/_plots"
 
     plot_training_results = False  # set false to plot eval results
@@ -189,9 +191,10 @@ def main():
         save_dir=save_dir,
         is_training_result=plot_training_results,
         env_name=env_name,
+        color_in_std=True
     )
 
 
 if __name__ == "__main__":
-    # main()
-    plot_seeds()
+    main()
+    # plot_seeds()
