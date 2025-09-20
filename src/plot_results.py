@@ -142,55 +142,73 @@ def load_csvs(
     return results_to_plot
 
 
-def load_seeds(base_dir, algo_name, load_train_results=False):
+def load_seeds(base_dir, algo_name, load_train_results=False, apply_rolling=True):
     seeds_dir = f"{base_dir}/{algo_name}/seeds"
-    results_to_plot = {}
+    results_to_plot = dict[str, tuple[pd.DataFrame, pd.DataFrame]]()
+
     for seed in os.listdir(seeds_dir):
         path_to_seed_csv = f"{seeds_dir}/{seed}/{'training_results.csv' if load_train_results else 'validation_results.csv'}"
         mean_df = read_csv(path_to_seed_csv)
+
+        if apply_rolling:
+            mean_df = mean_df.rolling(window=3, min_periods=1).mean()
+
         # This is a hack but it works: create a second df where every col except training steps is 0
         # When we plot this using plot_results it wont have the highlighted interval
         std_df = mean_df.copy()
         std_df[mean_df.columns[0]] = 0
         std_df[mean_df.columns[1]] = 0
         results_to_plot[f"{algo_name}_{seed}"] = (mean_df, std_df)
+
     return results_to_plot
 
 
 def plot_seeds():
-    env_name = "LunarLander-v3"  # just for plot title
+    # env_name = "LunarLander-v3"
+    env_name = "FrozenLake-v1"
+
     base_dir = f"results/{env_name}/1.0M"
-    algo_name = ""
+
+    algo_name = "SB3_DQN"
+
     seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
-    plot_training_results = False  # set false to plot eval results
+
+    plot_training_results = False  # toggle to either to plot eval or train results
+
     results_to_plot = load_seeds(
-        base_dir, algo_name, load_train_results=plot_training_results
+        base_dir,
+        algo_name,
+        load_train_results=plot_training_results,
+        apply_rolling=True,
     )
+
     plot_results(
-        results_to_plot,
+        results_to_plot=results_to_plot,
         save_dir=seeds_save_dir,
         is_training_result=plot_training_results,
         env_name=env_name,
     )
 
 
-def main():
+def main_plots():
     # env_name = "LunarLander-v3"
     env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
-        "Custom_DQN_1qh",
-        "Custom_DQN_3qh",
-        "Custom_DQN_5qh",
+        # "Custom_DQN_1qh",
+        # "Custom_DQN_3qh",
+        # "Custom_DQN_5qh",
         "Custom_DQN_10qh",
-        "SB3_DQN",
-        "RANDOM",
+        # "SB3_DQN",
+        # "RANDOM",
     ]
-    save_dir = f"{base_dir}/_plots"
+
+    # save_dir = f"{base_dir}/_plots"
+    save_dir = f"{base_dir}/_plots_10qh"
 
     plot_training_results = False  # toggle to either to plot eval or train results
-    load_head_results = False  # set True to see head plots
+    load_head_results = True  # set True to see head plots
 
     results_to_plot = load_csvs(
         base_dir,
@@ -208,6 +226,10 @@ def main():
     )
 
 
+def main():
+    # main_plots()
+    plot_seeds()
+
+
 if __name__ == "__main__":
     main()
-    # plot_seeds()
