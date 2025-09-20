@@ -196,19 +196,19 @@ def main_plots():
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
-        # "Custom_DQN_1qh",
-        # "Custom_DQN_3qh",
-        # "Custom_DQN_5qh",
+        "Custom_DQN_1qh",
+        "Custom_DQN_3qh",
+        "Custom_DQN_5qh",
         "Custom_DQN_10qh",
-        # "SB3_DQN",
-        # "RANDOM",
+        "SB3_DQN",
+        "RANDOM",
     ]
 
-    # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots_10qh"
+    save_dir = f"{base_dir}/_plots"
+    # save_dir = f"{base_dir}/_plots_10qh"
 
     plot_training_results = False  # toggle to either to plot eval or train results
-    load_head_results = True  # set True to see head plots
+    load_head_results = False  # set True to see head plots
 
     results_to_plot = load_csvs(
         base_dir,
@@ -227,8 +227,8 @@ def main_plots():
 
 
 def main():
-    # main_plots()
-    plot_seeds()
+    main_plots()
+    # plot_seeds()
 
 
 if __name__ == "__main__":
