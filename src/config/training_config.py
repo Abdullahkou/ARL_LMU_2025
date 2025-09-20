@@ -129,12 +129,13 @@ class HyperParams:
     clip_grad_norm: float | None = 10.0
     double_q: bool = True  # enable Double DQN
     dueling: bool = False  # enable Dueling DQN
-    n_q_heads: int = 10  # multiple Q heads for ensembles/uncertainty
+    n_q_heads: int = 1  # multiple Q heads for ensembles/uncertainty
     hidden_sizes: tuple[int, ...] = (256, 256)  # MLP
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
     independent_heads: bool = False  # shared encoder vs. completely independent
     ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
-    ebql_strict: bool = True 
+    ebql_strict: bool = True
+    boostrap_prob: str | float = "auto"
 
 
 @dataclass
@@ -150,7 +151,7 @@ class TrainingConfig:
     env_id: Environments = Environments.LUNAR_LANDER
     steps: int = 1_000_000
 
-    seeds: list[int] = field(default_factory=lambda: [0, 1, 2])
+    seeds: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     train_env_seed: int = 2
     eval_env_seed: int = 3
 
