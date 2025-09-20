@@ -19,7 +19,7 @@ def plot_results(
     env_name="",
     is_training_result=False,
     interval_x_axis: int | None = 5,
-    color_in_std=True
+    color_in_std=True,
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -91,7 +91,9 @@ def plot_results(
                 continue
 
             if color_in_std:
-                plt.fill_between(x_vals, mean - std, mean + std, alpha=0.3, color=f"C{idx}")
+                plt.fill_between(
+                    x_vals, mean - std, mean + std, alpha=0.3, color=f"C{idx}"
+                )
 
         plt.legend()
 
@@ -173,17 +175,28 @@ def plot_seeds():
 
 
 def main():
-    env_name = "LunarLander-v3"  # just for plot title
+    # env_name = "LunarLander-v3"
+    env_name = "FrozenLake-v1"
+
     base_dir = f"results/{env_name}/1.0M"
-    algos_to_plot = ["Custom_DQN_1qh", "Custom_DQN_3qh", "Custom_DQN_5qh", "SB3_DQN", "SB3_PPO", "RANDOM"]
+    algos_to_plot = [
+        "Custom_DQN_1qh",
+        "Custom_DQN_3qh",
+        "Custom_DQN_5qh",
+        "Custom_DQN_10qh",
+        "SB3_DQN",
+        "RANDOM",
+    ]
     save_dir = f"{base_dir}/_plots"
 
-    plot_training_results = False  # set false to plot eval results
+    plot_training_results = False  # toggle to either to plot eval or train results
+    load_head_results = False  # set True to see head plots
+
     results_to_plot = load_csvs(
         base_dir,
         algos_to_plot=algos_to_plot,
         load_training_csvs=plot_training_results,
-        load_head_results=False,
+        load_head_results=load_head_results,
     )
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(
@@ -191,7 +204,7 @@ def main():
         save_dir=save_dir,
         is_training_result=plot_training_results,
         env_name=env_name,
-        color_in_std=True
+        color_in_std=True,
     )
 
 
