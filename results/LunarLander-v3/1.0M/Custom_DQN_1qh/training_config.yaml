@@ -2,7 +2,7 @@ algo_config:
     algorithm: Custom_DQN
     hyper_params:
         batch_size: 256
-        boostrap_prob: 1.0
+        bootstrap_prob: 1.0
         buffer_size: 30000
         clip_grad_norm: 10.0
         double_q: true

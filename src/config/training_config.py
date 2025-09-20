@@ -134,8 +134,8 @@ class HyperParams:
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
     independent_heads: bool = False  # shared encoder vs. completely independent
     ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
-    ebql_strict: bool = True
-    boostrap_prob: str | float = "auto"
+    ebql_strict: bool = False
+    bootstrap_prob: str | float = "auto"
 
 
 @dataclass
