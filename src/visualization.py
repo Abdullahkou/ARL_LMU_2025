@@ -15,7 +15,7 @@ def render_eval(config_dir: str, env_id: str, seed: int, num_episodes: int = 10)
 
     env_factory = partial(make_gym, env_id=env_id, seed=config.eval_env_seed)
 
-    model = WrapperAgent(config.algo_config, env_factory=env_factory, seed=seed)
+    model = WrapperAgent(config, env_factory=env_factory, seed=seed)
     load_path = f"{config_dir}/{MODELS_DIR}/seed_{seed}"
     model.load(load_path)
 

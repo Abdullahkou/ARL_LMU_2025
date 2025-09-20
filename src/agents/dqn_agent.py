@@ -79,10 +79,10 @@ class DQNAgent(IAgent):
         # networks
 
         if getattr(self.hp, "independent_heads", False):
-            print("Using IndependentQNetwork with separate encoders per head.")
+            # print("Using IndependentQNetwork with separate encoders per head.")
             NetClass = IndependentQNetwork
         else:
-            print("Using QNetwork with shared encoder.")
+            # print("Using QNetwork with shared encoder.")
             NetClass = QNetwork
 
         self.q_net = NetClass(
@@ -134,6 +134,8 @@ class DQNAgent(IAgent):
         self.target_q_net.eval()
 
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=self.hp.learning_rate)
+        
+        boostrap_prob = 0.5 if self.hp.n_q_heads > 1 else 1
 
         self.replay = ReplayBuffer(
             capacity=self.hp.buffer_size,
@@ -141,7 +143,7 @@ class DQNAgent(IAgent):
             seed=self.seed,
             device=self.device,
             n_heads=self.hp.n_q_heads,
-            bootstrap_prob=0.5,  # 1.0 = jede Transition sichtbar für jeden Head
+            bootstrap_prob=boostrap_prob,  # 1.0 = jede Transition sichtbar für jeden Head
         )
 
         self.global_step = 0
