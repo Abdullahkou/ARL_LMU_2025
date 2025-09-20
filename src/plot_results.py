@@ -142,9 +142,15 @@ def load_csvs_heads(base_dir):
 
 
 def main():
-    env_name = "Taxi-v3"  # just for plot title
-    base_dir = f"results/{env_name}/100.0K"
-    algos_to_plot = ["Custom_DQN_3qh", "SB3_DQN", "RANDOM"]
+    #env_name = "FrozenLake-v1"  # just for plot title
+    env_name = "LunarLander-v3"  # just for plot title
+    base_dir = f"results/{env_name}/1.0M"
+    algos_to_plot = [
+        "Custom_DQN_strict_ebql_3qh",
+        "Custom_DQN_strict_ebql_5qh",
+        "Custom_DQN_strict_ebql_7qh",
+        "Custom_DQN_strict_ebql_10qh",
+        "Custom_DQN_strict_ebql_20qh",]
     save_dir = f"{base_dir}/_plots"
 
     plot_training_results = False  # set false to plot eval results
@@ -152,7 +158,7 @@ def main():
         base_dir,
         algos_to_plot,
         load_training_csvs=plot_training_results,
-        load_head_results=False,
+        load_head_results=True,
     )
 
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)

@@ -5,7 +5,7 @@ from agents.dqn_agent import DQNAgent
 from config.training_config import AlgoConfig, make_gym
 from utils.rendering import Renderer
 
-env_id = "LunarLander-v3"
+env_id = "MountainCar-v0"
 
 
 def make_env():
@@ -16,9 +16,9 @@ agent = DQNAgent(config=AlgoConfig(), train_env_factory=make_env, device="cpu")
 
 
 agent.learn(total_steps=100_000)
-agent.save(path="strict_epql")
+agent.save(path="strict_epql_MountainCar-v0")
 
-#agent.load(path=p)
+# agent.load(path=p)
 # Evaluation
 n_eval_episodes = 10
 
