@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 
-from src.agents.dqn_agent import DQNAgent
-from src.config.training_config import AlgoConfig, make_gym
-from src.utils.rendering import Renderer
+from agents.dqn_agent import DQNAgent
+from config.training_config import AlgoConfig, make_gym
+from utils.rendering import Renderer
 
-env_id = "LunarLander-v3"
+env_id = "MountainCar-v0"
 
 
 def make_env():
@@ -16,50 +16,51 @@ agent = DQNAgent(config=AlgoConfig(), train_env_factory=make_env, device="cpu")
 
 
 agent.learn(total_steps=100_000)
-agent.save(path="results/test/independent_dqn_agent/dqn")
+agent.save(path="strict_epql_MountainCar-v0")
 
+# agent.load(path=p)
 # Evaluation
-n_eval_episodes = 5
+n_eval_episodes = 10
 
 # Teste jeden Head einzeln
-for head in range(agent.hp.n_q_heads):
-    returns = []
-    for i in range(n_eval_episodes):
-        eval_env = make_gym(env_id, render_mode="rgb_array")
-        renderer = Renderer(eval_env)
-        obs, _ = eval_env.reset()
-        done = False
-        episode_return = 0
-        while not done:
-            # explizit nur diesen Head nutzen
-            q_values = agent.q_net(
-                torch.as_tensor(obs, dtype=torch.float32).unsqueeze(0)
-            )
-            q_head = q_values[:, head] if q_values.ndim == 3 else q_values
-            action = int(torch.argmax(q_head, dim=-1).item())
-            obs, reward, terminated, truncated, _ = eval_env.step(action)
-            episode_return += reward
-            done = terminated or truncated
-            if renderer is not None and renderer._enabled:
-                renderer.add_reward(reward)
-                esc, space = renderer.pump_events()
-                if esc:
-                    renderer.close()
-                elif space:
-                    renderer.toggle_speed()
-                else:
-                    renderer.render()
+# for head in range(agent.hp.n_q_heads):
+#     returns = []
+#     for i in range(n_eval_episodes):
+#         eval_env = make_gym(env_id, render_mode="rgb_array")
+#         renderer = Renderer(eval_env)
+#         obs, _ = eval_env.reset()
+#         done = False
+#         episode_return = 0
+#         while not done:
+#             # explizit nur diesen Head nutzen
+#             q_values = agent.q_net(
+#                 torch.as_tensor(obs, dtype=torch.float32).unsqueeze(0)
+#             )
+#             q_head = q_values[:, head] if q_values.ndim == 3 else q_values
+#             action = int(torch.argmax(q_head, dim=-1).item())
+#             obs, reward, terminated, truncated, _ = eval_env.step(action)
+#             episode_return += reward
+#             done = terminated or truncated
+#             if renderer is not None and renderer._enabled:
+#                 renderer.add_reward(reward)
+#                 esc, space = renderer.pump_events()
+#                 if esc:
+#                     renderer.close()
+#                 elif space:
+#                     renderer.toggle_speed()
+#                 else:
+#                     renderer.render()
 
-        eval_env.close()
-        returns.append(episode_return)
-    avg_return = np.mean(returns)
-    print(f"Head {head} average return over {n_eval_episodes} episodes: {avg_return}")
+#         eval_env.close()
+#         returns.append(episode_return)
+#     avg_return = np.mean(returns)
+#     print(f"Head {head} average return over {n_eval_episodes} episodes: {avg_return}")
 
 
 # Ensemble Voting (alle Heads mitteln)
 returns = []
 for i in range(n_eval_episodes):
-    eval_env = make_gym(env_id, render_mode="rgb_array")
+    eval_env = make_gym(env_id, render_mode="rgb_array", seed=42 + i)
     renderer = Renderer(eval_env)
     obs, _ = eval_env.reset()
     done = False

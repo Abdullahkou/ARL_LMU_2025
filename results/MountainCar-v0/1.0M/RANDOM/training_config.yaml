@@ -2,10 +2,12 @@ algo_config:
     algorithm: RANDOM
     hyper_params:
         batch_size: 256
+        bootstrap_prob: 0.5
         buffer_size: 30000
         clip_grad_norm: 10.0
         double_q: true
         dueling: false
+        ebql_strict: false
         ensemble_aggregation: avg
         epsilon_decay_steps: 250000
         gamma: 0.99
