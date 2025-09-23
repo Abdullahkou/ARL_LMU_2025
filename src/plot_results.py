@@ -20,12 +20,13 @@ def plot_results(
     is_training_result=False,
     interval_x_axis: int | None = 5,
     color_in_std=True,
+    save_file_postfix=""
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
     x_vals = list(results_to_plot.values())[0][0].index
-    x_label = f"{'Training' if is_training_result else 'Validation'} Steps"
+    x_label = "Training Steps"
 
     heads_present = any(re.search(r"h\d", s) for s in results_to_plot.keys())
 
@@ -104,7 +105,7 @@ def plot_results(
         # Customize y-axis and x-axis to start at 0
         # plt.ylim(bottom=0)
         plt.xlim(left=0)
-        plt.savefig(f"{save_dir}/{file_name}")
+        plt.savefig(f"{save_dir}/{file_name}{save_file_postfix}")
         plt.clf()
 
 
@@ -191,23 +192,21 @@ def plot_seeds():
 
 
 def main_plots():
-    # env_name = "LunarLander-v3"
-    env_name = "FrozenLake-v1"
+    env_name = "LunarLander-v3"
+    # env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
         "Custom_DQN_1qh",
-        "Custom_DQN_3qh",
-        "Custom_DQN_5qh",
-        "Custom_DQN_10qh",
-        "SB3_DQN",
-        "RANDOM",
+        #"Custom_DQN_3qh",
+        #"Custom_DQN_5qh",
+        #"Custom_DQN_10qh",
     ]
 
-    save_dir = f"{base_dir}/_plots"
-    # save_dir = f"{base_dir}/_plots_10qh"
+    # save_dir = f"{base_dir}/_plots"
+    save_dir = f"{base_dir}/Custom_DQN_1qh/_plots"
 
-    plot_training_results = False  # toggle to either to plot eval or train results
+    plot_training_results = True  # toggle to either to plot eval or train results
     load_head_results = False  # set True to see head plots
 
     results_to_plot = load_csvs(
