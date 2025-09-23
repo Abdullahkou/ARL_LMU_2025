@@ -20,6 +20,7 @@ def plot_results(
     is_training_result=False,
     interval_x_axis: int | None = 5,
     color_in_std=True,
+    save_file_postfix="",
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -104,7 +105,7 @@ def plot_results(
         # Customize y-axis and x-axis to start at 0
         # plt.ylim(bottom=0)
         plt.xlim(left=0)
-        plt.savefig(f"{save_dir}/{file_name}")
+        plt.savefig(f"{save_dir}/{file_name}{save_file_postfix}")
         plt.clf()
 
 
@@ -164,12 +165,12 @@ def load_seeds(base_dir, algo_name, load_train_results=False, apply_rolling=True
 
 
 def plot_seeds():
-    # env_name = "LunarLander-v3"
-    env_name = "FrozenLake-v1"
+    env_name = "LunarLander-v3"
+    # env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
 
-    algo_name = "SB3_DQN"
+    algo_name = "Custom_DQN_strict_ebql_20qh"
 
     seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
 
@@ -191,23 +192,21 @@ def plot_seeds():
 
 
 def main_plots():
-    # env_name = "LunarLander-v3"
-    env_name = "FrozenLake-v1"
+    env_name = "LunarLander-v3"
+    # env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
-        "Custom_DQN_1qh",
-        "Custom_DQN_3qh",
+        "Custom_DQN_1qh_bpauto",
         "Custom_DQN_3qh_bpauto",
-        "Custom_DQN_5qh",
         "Custom_DQN_5qh_bpauto",
-        "RANDOM",
+        "Custom_DQN_10qh_bpauto",
     ]
 
-    save_dir = f"{base_dir}/_plots_bpauto"
-    # save_dir = f"{base_dir}/_plots_10qh"
+    # save_dir = f"{base_dir}/_plots"
+    save_dir = f"{base_dir}/_plots/Custom_DQN_bpauto/"
 
-    plot_training_results = False  # toggle to either to plot eval or train results
+    plot_training_results = True  # toggle to either to plot eval or train results
     load_head_results = False  # set True to see head plots
 
     results_to_plot = load_csvs(
@@ -223,6 +222,7 @@ def main_plots():
         is_training_result=plot_training_results,
         env_name=env_name,
         color_in_std=True,
+        save_file_postfix="",
     )
 
 

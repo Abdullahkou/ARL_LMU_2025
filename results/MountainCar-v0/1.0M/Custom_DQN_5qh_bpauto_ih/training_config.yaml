@@ -1,0 +1,48 @@
+algo_config:
+    algorithm: Custom_DQN
+    hyper_params:
+        batch_size: 256
+        bootstrap_prob: auto
+        buffer_size: 30000
+        clip_grad_norm: 10.0
+        double_q: true
+        dueling: false
+        ebql_strict: false
+        ensemble_aggregation: avg
+        epsilon_decay_steps: 250000
+        gamma: 0.99
+        gradient_steps: 1
+        hidden_sizes:
+        - 256
+        - 256
+        independent_heads: true
+        learning_rate: 0.0003
+        learning_starts: 3000
+        max_epsilon: 0.5
+        min_epsilon: 0.05
+        n_q_heads: 5
+        target_update_interval: 1000
+        tau: 1.0
+        train_freq: 1
+        use_ebql: true
+    ignore_hyper_params: false
+env_id: MountainCar-v0
+eval_env_seed: 3
+eval_episodes: 20
+eval_phases: 20
+record_heads: true
+record_training: true
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+steps: 1000000
+train_env_seed: 2
+train_log_phases: 40
