@@ -18,6 +18,34 @@ class DQN:
         pass
 
 
+# DQNPolicy(
+#   (q_net): QNetwork(
+#     (features_extractor): FlattenExtractor(
+#       (flatten): Flatten(start_dim=1, end_dim=-1)
+#     )
+#     (q_net): Sequential(
+#       (0): Linear(in_features=8, out_features=64, bias=True)
+#       (1): ReLU()
+#       (2): Linear(in_features=64, out_features=64, bias=True)
+#       (3): ReLU()
+#       (4): Linear(in_features=64, out_features=4, bias=True)
+#     )
+#   )
+#   (q_net_target): QNetwork(
+#     (features_extractor): FlattenExtractor(
+#       (flatten): Flatten(start_dim=1, end_dim=-1)
+#     )
+#     (q_net): Sequential(
+#       (0): Linear(in_features=8, out_features=64, bias=True)
+#       (1): ReLU()
+#       (2): Linear(in_features=64, out_features=64, bias=True)
+#       (3): ReLU()
+#       (4): Linear(in_features=64, out_features=4, bias=True)
+#     )
+#   )
+# )
+
+
 class TD3:
     def c(
         learning_rate: float = 0.001,
