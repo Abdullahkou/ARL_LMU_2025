@@ -165,12 +165,12 @@ def load_seeds(base_dir, algo_name, load_train_results=False, apply_rolling=True
 
 
 def plot_seeds():
-    # env_name = "LunarLander-v3"
-    env_name = "FrozenLake-v1"
+    env_name = "LunarLander-v3"
+    # env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
 
-    algo_name = "SB3_DQN"
+    algo_name = "Custom_DQN_strict_ebql_20qh"
 
     seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
 
@@ -226,8 +226,8 @@ def main_plots():
 
 
 def main():
-    main_plots()
-    # plot_seeds()
+    # main_plots()
+    plot_seeds()
 
 
 if __name__ == "__main__":
