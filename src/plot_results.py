@@ -25,7 +25,7 @@ def plot_results(
         os.makedirs(save_dir)
 
     x_vals = list(results_to_plot.values())[0][0].index
-    x_label = f"{'Training' if is_training_result else 'Validation'} Steps"
+    x_label = "Training Steps"
 
     heads_present = any(re.search(r"h\d", s) for s in results_to_plot.keys())
 
@@ -198,13 +198,13 @@ def main_plots():
     algos_to_plot = [
         "Custom_DQN_1qh",
         "Custom_DQN_3qh",
+        "Custom_DQN_3qh_bpauto",
         "Custom_DQN_5qh",
-        "Custom_DQN_10qh",
-        "SB3_DQN",
+        "Custom_DQN_5qh_bpauto",
         "RANDOM",
     ]
 
-    save_dir = f"{base_dir}/_plots"
+    save_dir = f"{base_dir}/_plots_bpauto"
     # save_dir = f"{base_dir}/_plots_10qh"
 
     plot_training_results = False  # toggle to either to plot eval or train results
