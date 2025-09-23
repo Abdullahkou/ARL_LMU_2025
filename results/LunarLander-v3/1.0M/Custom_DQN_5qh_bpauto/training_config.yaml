@@ -33,6 +33,13 @@ eval_phases: 20
 record_heads: true
 record_training: true
 seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
 - 7
 - 8
 - 9
