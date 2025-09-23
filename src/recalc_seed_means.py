@@ -79,7 +79,7 @@ def recalc_seed_means(model_dir: str, seeds_to_collect: list[int]):
     # only aggregate if the run actually used multi-head DQN
     if (
         config.record_heads
-        and config.algo_config.algorithm.name == Algorithm.CUSTOM_DQN
+        and config.algo_config.algorithm == Algorithm.CUSTOM_DQN
         and config.algo_config.hyper_params.n_q_heads > 1
     ):
         aggregate_head_results(
@@ -90,9 +90,9 @@ def recalc_seed_means(model_dir: str, seeds_to_collect: list[int]):
 
 
 def main():
-    model_dir = "results/test/LunarLander-v3/1.0K/RANDOM_0"
+    model_dir = "results/FrozenLake-v1/1.0M/Custom_DQN_5qh_bpauto"
 
-    seeds_to_collect = [0, 1]
+    seeds_to_collect = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     recalc_seed_means(model_dir, seeds_to_collect=seeds_to_collect)
 
 
