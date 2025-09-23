@@ -15,7 +15,7 @@ algo_config:
         hidden_sizes:
         - 256
         - 256
-        independent_heads: true
+        independent_heads: false
         learning_rate: 0.0003
         learning_starts: 3000
         max_epsilon: 0.5

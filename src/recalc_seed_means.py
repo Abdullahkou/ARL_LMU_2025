@@ -79,7 +79,7 @@ def recalc_seed_means(model_dir: str, seeds_to_collect: list[int]):
     # only aggregate if the run actually used multi-head DQN
     if (
         config.record_heads
-        and config.algo_config.algorithm.name == Algorithm.CUSTOM_DQN
+        and config.algo_config.algorithm == Algorithm.CUSTOM_DQN
         and config.algo_config.hyper_params.n_q_heads > 1
     ):
         aggregate_head_results(

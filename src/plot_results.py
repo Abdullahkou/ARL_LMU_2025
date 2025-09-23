@@ -20,7 +20,7 @@ def plot_results(
     is_training_result=False,
     interval_x_axis: int | None = 5,
     color_in_std=True,
-    save_file_postfix=""
+    save_file_postfix="",
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -222,7 +222,7 @@ def main_plots():
         is_training_result=plot_training_results,
         env_name=env_name,
         color_in_std=True,
-        save_file_postfix=""
+        save_file_postfix="",
     )
 
 
