@@ -4,6 +4,7 @@ import numpy as np
 from gymnasium import Env
 from stable_baselines3 import A2C, DQN, PPO, TD3
 from stable_baselines3.common.callbacks import BaseCallback
+from torch.nn import ReLU
 
 from agents.baseAgent import IAgent
 from config.training_config import Algorithm, TrainingConfig
@@ -24,6 +25,10 @@ class SB3Wrapper(IAgent):
 
         config = train_config.algo_config
         hp = config.hyper_params
+
+        # activation fn currently not part of hyperparams
+        # but we use ReLU for our agent as well
+        policy_kwargs = dict(activation_fn=ReLU, net_arch=hp.hidden_sizes)
 
         base_qlearn_dict = {
             "learning_rate": hp.learning_rate,
@@ -53,6 +58,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
+                    policy_kwargs=policy_kwargs,
                     **dqn_dict,
                 )
             case Algorithm.SB3_TD3:
@@ -61,6 +67,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
+                    policy_kwargs=policy_kwargs,
                     **base_qlearn_dict,
                 )
             case Algorithm.SB3_A2C:
@@ -69,6 +76,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
+                    policy_kwargs=policy_kwargs,
                     learning_rate=hp.learning_rate,
                     gamma=hp.gamma,
                     max_grad_norm=hp.clip_grad_norm,
@@ -79,6 +87,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
+                    policy_kwargs=policy_kwargs,
                     learning_rate=hp.learning_rate,
                     gamma=hp.gamma,
                     max_grad_norm=hp.clip_grad_norm,
@@ -90,6 +99,7 @@ class SB3Wrapper(IAgent):
                     env=env,
                     seed=seed,
                     device=device,
+                    policy_kwargs=policy_kwargs,
                     **dqn_dict,
                 )
 
