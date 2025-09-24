@@ -146,6 +146,6 @@ class IndependentQNetwork(nn.Module):
             qs.append(q)
 
         out = torch.stack(qs, dim=1)  # [B, n_heads, n_actions]
-        if self.n_heads == 1:
-            out = out[:, 0]  # [B, n_actions]
+        # if self.n_heads == 1:
+        #     out = out[:, 0]  # [B, n_actions]
         return out
