@@ -107,6 +107,9 @@ class DQNAgent(IAgent):
         # Sanity: EBQL requires K>=2
         if getattr(self.hp, "use_ebql", False):
             assert self.hp.n_q_heads >= 2, "EBQL needs at least 2 ensemble members."
+        if getattr(self.hp, "use_ebql", True):
+            print("USING STRICT EBQL")
+        print(f"USING BOOTSTRAP PROBABILITY: {self.hp.bootstrap_prob}")
 
     def set_indiviudal_head_eval_fn(
         self, eval_heads_fn: Callable[[int], None] | None = None
