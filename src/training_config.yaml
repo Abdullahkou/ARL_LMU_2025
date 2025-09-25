@@ -24,6 +24,7 @@ algo_config:
         tau: 1.0
         train_freq: 1
         use_ebql: true
+        ensemble_aggregation: avg
     ignore_hyper_params: false
 env_id: LunarLander-v3
 eval_env_seed: 3
