@@ -159,6 +159,8 @@ def plot_results(
         for idx, (agent_name, (means, stds)) in enumerate(results_to_plot.items()):
             if col_name not in means:
                 continue
+            if "/" in agent_name:
+                agent_name = agent_name.split("/")[-1]
             if col_name == VALUE_ERROR and (
                 "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
             ):
@@ -380,14 +382,14 @@ def boxplot(plot_training = True ):
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
         "RANDOM",
-        "32x32/Custom_DQN_1qh_1bs",
-        "32x32/Custom_DQN_1qh_05bs",
-        "32x32/Custom_DQN_5qh_1bs",
-        "32x32/Custom_DQN_5qh_05bs",
-        "32x32/Custom_DQN_5qh_05bs_i_true",
+        "64x64/Custom_DQN_1qh_auto",
+        "64x64/Custom_DQN_1qh_1bs",
+        "64x64/Custom_DQN_1qh_05bs",
+        "64x64/Custom_DQN_5qh_1bs",
+        "64x64/Custom_DQN_5qh_05bs",
     ]
 
-    save_dir = f"{base_dir}/32x32/_boxplots"
+    save_dir = f"{base_dir}/64x64/_boxplots"
 
     plot_training_results = plot_training  # toggle to either to plot eval or train results
 
@@ -414,14 +416,14 @@ def main_plots(plot_training = True):
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
         "RANDOM",
-        "32x32/Custom_DQN_1qh_1bs",
-        "32x32/Custom_DQN_1qh_05bs",
-        "32x32/Custom_DQN_5qh_1bs",
-        "32x32/Custom_DQN_5qh_05bs",
-        "32x32/Custom_DQN_5qh_05bs_i_true",
+        "64x64/Custom_DQN_1qh_auto",
+        "64x64/Custom_DQN_1qh_1bs",
+        "64x64/Custom_DQN_1qh_05bs",
+        "64x64/Custom_DQN_5qh_1bs",
+        "64x64/Custom_DQN_5qh_05bs",
     ]
 
-    save_dir = f"{base_dir}/32x32/_plots"
+    save_dir = f"{base_dir}/64x64/_plots"
     # save_dir = f"{base_dir}/64x64/_plots"
 
     plot_training_results = plot_training  # toggle to either to plot eval or train results
@@ -445,7 +447,7 @@ def main_plots(plot_training = True):
 
 
 def main():
-    plot_training = False
+    plot_training = True
 
     boxplot(plot_training)
     main_plots(plot_training)
