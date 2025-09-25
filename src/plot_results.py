@@ -373,25 +373,23 @@ def load_csv_for_boxplot(
 
     return results_to_plot
 
-def boxplot():
+def boxplot(plot_training = True ):
     env_name = "MountainCar-v0"
     # env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
         "RANDOM",
-        "256x256/Custom_DQN_1qh",
-        "256x256/Custom_DQN_3qh",
-        "256x256/Custom_DQN_3qh_bpauto",
-        "256x256/Custom_DQN_3qh_bpauto_ih",
-        "256x256/Custom_DQN_5qh_bpauto",
-        "256x256/Custom_DQN_5qh_bpauto_ih",
-        "256x256/Custom_DQN_10qh_bpauto",
+        "32x32/Custom_DQN_1qh_1bs",
+        "32x32/Custom_DQN_1qh_05bs",
+        "32x32/Custom_DQN_5qh_1bs",
+        "32x32/Custom_DQN_5qh_05bs",
+        "32x32/Custom_DQN_5qh_05bs_i_true",
     ]
 
-    save_dir = f"{base_dir}/256x256/_boxplots"
+    save_dir = f"{base_dir}/32x32/_boxplots"
 
-    plot_training_results = False  # toggle to either to plot eval or train results
+    plot_training_results = plot_training  # toggle to either to plot eval or train results
 
 
     results_to_plot = load_csv_for_boxplot(
@@ -409,25 +407,24 @@ def boxplot():
         )
 
 
-def main_plots():
+def main_plots(plot_training = True):
     env_name = "MountainCar-v0"
     # env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
         "RANDOM",
-        "256x256/Custom_DQN_1qh",
-        "256x256/Custom_DQN_3qh",
-        "256x256/Custom_DQN_3qh_bpauto",
-        "256x256/Custom_DQN_3qh_bpauto_ih",
-        "256x256/Custom_DQN_5qh_bpauto",
-        "256x256/Custom_DQN_5qh_bpauto_ih",
+        "32x32/Custom_DQN_1qh_1bs",
+        "32x32/Custom_DQN_1qh_05bs",
+        "32x32/Custom_DQN_5qh_1bs",
+        "32x32/Custom_DQN_5qh_05bs",
+        "32x32/Custom_DQN_5qh_05bs_i_true",
     ]
 
-    # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/64x64/_plots_Custom_vs_SB3"
+    save_dir = f"{base_dir}/32x32/_plots"
+    # save_dir = f"{base_dir}/64x64/_plots"
 
-    plot_training_results = False  # toggle to either to plot eval or train results
+    plot_training_results = plot_training  # toggle to either to plot eval or train results
     load_head_results = False  # set True to see head plots
 
     results_to_plot = load_csvs(
@@ -448,8 +445,10 @@ def main_plots():
 
 
 def main():
-    # boxplot()
-    main_plots()
+    plot_training = False
+
+    boxplot(plot_training)
+    main_plots(plot_training)
     # plot_seeds()
 
 
