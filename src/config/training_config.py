@@ -105,6 +105,7 @@ class Environments(Enum):
     MOUNTAIN_CAR = "MountainCar-v0"
     TAXI = "Taxi-v3"
     CARTPOLE_V1 = "CartPole-v1"
+    SPACE_INVADERS = "ALE/SpaceInvaders-ram-v5"
 
 
 class EnsembleAggregation(Enum):
