@@ -192,19 +192,24 @@ def plot_seeds():
 
 
 def main_plots():
-    env_name = "LunarLander-v3"
-    # env_name = "FrozenLake-v1"
+    # env_name = "LunarLander-v3"
+    env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
-        "Custom_DQN_1qh_bpauto",
-        "Custom_DQN_3qh_bpauto",
-        "Custom_DQN_5qh_bpauto",
-        "Custom_DQN_10qh_bpauto",
+        # "Custom_DQN_1qh_bp0.5",
+        "Custom_DQN_1qh_32x32_bp0.5",
+        # "Custom_DQN_5qh_bp0.5",
+        "Custom_DQN_5qh_32x32_bp0.5",
+        # "Custom_DQN_10qh_bp0.5",
+        "Custom_DQN_10qh_32x32_bp0.5",
+        # "SB3_DQN",
+        "SB3_DQN_32x32",
+        "RANDOM",
     ]
 
     # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/Custom_DQN_bpauto/"
+    save_dir = f"{base_dir}/_plots/32x32_bp0.5/"
 
     plot_training_results = True  # toggle to either to plot eval or train results
     load_head_results = False  # set True to see head plots
