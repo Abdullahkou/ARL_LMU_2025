@@ -3,6 +3,7 @@ import os
 import traceback
 from functools import partial
 from typing import Any
+import ale_py
 
 import gymnasium as gym
 import numpy as np
@@ -116,7 +117,7 @@ def train(
                 num_heads = dqn_agent.hp.n_q_heads
 
                 eval_env_per_head: gym.vector.VectorEnv = gym.make_vec(
-                    id=env_id, num_envs=num_heads
+                    id=env_id, obs_type="ram", num_envs=num_heads
                 )
                 eval_env_per_head.reset(seed=seed)
 

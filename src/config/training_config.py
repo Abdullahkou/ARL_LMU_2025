@@ -79,7 +79,7 @@ def deserialize(cls, data):
 
 
 def make_gym(id: str, seed=42, render_mode: str | None = None) -> Env:
-    env = gymnasium.make(id=id, render_mode=render_mode)
+    env = gymnasium.make(id="ALE/SpaceInvaders-v5", obs_type="ram", render_mode=render_mode)
     env.reset(seed=seed)
 
     env = ObsArrayWrapper(env)
@@ -105,7 +105,7 @@ class Environments(Enum):
     MOUNTAIN_CAR = "MountainCar-v0"
     TAXI = "Taxi-v3"
     CARTPOLE_V1 = "CartPole-v1"
-    SPACE_INVADERS = "ALE/SpaceInvaders-ram-v5"
+    SPACE_INVADERS = "ALE/SpaceInvaders-v5"
 
 
 class EnsembleAggregation(Enum):
