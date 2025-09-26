@@ -110,6 +110,7 @@ class DQNAgent(IAgent):
         if getattr(self.hp, "use_ebql", True):
             print("USING STRICT EBQL")
         print(f"USING BOOTSTRAP PROBABILITY: {self.hp.bootstrap_prob}")
+        print(f"USE_EBQL: {self.hp.use_ebql}")
 
     def set_indiviudal_head_eval_fn(
         self, eval_heads_fn: Callable[[int], None] | None = None
@@ -213,7 +214,8 @@ class DQNAgent(IAgent):
         q = self.q_net(obs_t)  # [B, H, A] or [B, A]
 
         if q.ndim == 3 and getattr(self.hp, "use_ebql", False):
-            q_used = q.mean(dim=1)  # ensemble mean for acting (Algorithm 1)
+            # q_used = q.mean(dim=1)  # ensemble mean for acting (Algorithm 1)
+            q_used = q[:, self.active_head]  # bootstrapped acting here also
         elif q.ndim == 3:
             q_used = q[:, self.active_head]  # bootstrapped acting
         else:
