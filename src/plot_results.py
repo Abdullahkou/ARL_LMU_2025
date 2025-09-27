@@ -118,7 +118,7 @@ def read_csv(path_to_file):
 def load_csvs(
     base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
-    results_to_plot = {}
+    results_to_plot = dict[str, tuple[str, str]]()
     if algos_to_plot is None:
         algos_to_plot = os.listdir(base_dir)
     for algo_name in algos_to_plot:
@@ -197,21 +197,21 @@ def main_plots():
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
-        # "Custom_DQN_1qh_bp0.5",
-        "Custom_DQN_1qh_32x32_bp0.5",
-        # "Custom_DQN_5qh_bp0.5",
-        "Custom_DQN_5qh_32x32_bp0.5",
-        # "Custom_DQN_10qh_bp0.5",
-        "Custom_DQN_10qh_32x32_bp0.5",
+        "Custom_DQN_1qh_bp0.5",
+        # "Custom_DQN_1qh_32x32_bp0.5",
+        "Custom_DQN_5qh_bp0.5",
+        # "Custom_DQN_5qh_32x32_bp0.5",
+        "Custom_DQN_10qh_bp0.5",
+        # "Custom_DQN_10qh_32x32_bp0.5",
         # "SB3_DQN",
-        "SB3_DQN_32x32",
+        # "SB3_DQN_32x32",
         "RANDOM",
     ]
 
     # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/32x32_bp0.5/"
+    save_dir = f"{base_dir}/_plots/64x64_all/"
 
-    plot_training_results = True  # toggle to either to plot eval or train results
+    plot_training_results = False  # toggle to either to plot eval or train results
     load_head_results = False  # set True to see head plots
 
     results_to_plot = load_csvs(
@@ -220,6 +220,16 @@ def main_plots():
         load_training_csvs=plot_training_results,
         load_head_results=load_head_results,
     )
+
+    results_to_plot["Custom_DQN_1qh_bp1.0"] = (
+        read_csv(
+            "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_mean.csv"
+        ),
+        read_csv(
+            "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_std.csv"
+        ),
+    )
+
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(
         results_to_plot,
