@@ -90,7 +90,7 @@ def recalc_seed_means(model_dir: str, seeds_to_collect: list[int]):
 
 
 def main():
-    model_dir = "results/LunarLander-v3/1.0M/Custom_DQN_5qh_bpauto_indp"
+    model_dir = "results/FrozenLake-v1/1.0M/256x256/Custom_DQN_10qh_bpauto_a"
 
     seeds_to_collect = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     recalc_seed_means(model_dir, seeds_to_collect=seeds_to_collect)
