@@ -197,19 +197,19 @@ def main_plots():
 
     base_dir = f"results/{env_name}/1.0M"
     algos_to_plot = [
-        "Custom_DQN_1qh_bp0.5",
-        # "Custom_DQN_1qh_32x32_bp0.5",
-        "Custom_DQN_5qh_bp0.5",
-        # "Custom_DQN_5qh_32x32_bp0.5",
-        "Custom_DQN_10qh_bp0.5",
-        # "Custom_DQN_10qh_32x32_bp0.5",
+        # "Custom_DQN_1qh_bp0.5",
+        "Custom_DQN_1qh_16x16_bp0.5",
+        # "Custom_DQN_5qh_bp0.5",
+        "Custom_DQN_5qh_16x16_bp0.5",
+        # "Custom_DQN_10qh_bp0.5",
+        "Custom_DQN_10qh_16x16_bp0.5",
         # "SB3_DQN",
-        # "SB3_DQN_32x32",
+        "SB3_DQN_16x16",
         "RANDOM",
     ]
 
     # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/64x64_all/"
+    save_dir = f"{base_dir}/_plots/16x16_bp0.5_sb3/"
 
     plot_training_results = False  # toggle to either to plot eval or train results
     load_head_results = False  # set True to see head plots
@@ -221,14 +221,14 @@ def main_plots():
         load_head_results=load_head_results,
     )
 
-    results_to_plot["Custom_DQN_1qh_bp1.0"] = (
-        read_csv(
-            "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_mean.csv"
-        ),
-        read_csv(
-            "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_std.csv"
-        ),
-    )
+    # results_to_plot["Custom_DQN_1qh_bp1.0"] = (
+    #     read_csv(
+    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_mean.csv"
+    #     ),
+    #     read_csv(
+    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_std.csv"
+    #     ),
+    # )
 
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(
