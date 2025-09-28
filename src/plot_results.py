@@ -25,7 +25,6 @@ def boxplot_results(
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-
     cols = [
         (
             REWARD,
@@ -49,7 +48,7 @@ def boxplot_results(
                 f"{'training' if is_training_result else 'validation'}_steps.png",
             )
         )
-    
+
     for col_name, title, file_name in cols:
         plt.rcParams["figure.figsize"] = (12, 7)
         plt.margins(x=0)
@@ -60,7 +59,7 @@ def boxplot_results(
         plt.ylabel(col_name)
 
         data_list = []
-        agents_list = [] 
+        agents_list = []
         for idx, (agent_name, means) in enumerate(results_to_plot.items()):
             if col_name not in means:
                 continue
@@ -71,7 +70,7 @@ def boxplot_results(
             data = means[col_name].values.astype(float)
             if not np.isfinite(data).any():
                 continue
-            
+
             # random agent represented by horizontal line due to no training progress
             if agent_name == RANDOM_AGENT:
                 random_handle = plt.axhline(
@@ -82,27 +81,32 @@ def boxplot_results(
                     color=f"C{idx}",
                 )
                 continue
-            
+
             if "/" in agent_name:
                 agent_name = agent_name.split("/")[-1]
 
             data_list.append(data)
             agents_list.append(agent_name)
-        
+
         # Ein Boxplot pro Agent
         boxplot = plt.boxplot(data_list, patch_artist=True)
 
         # Farben anpassen
-        for patch, color in zip(boxplot["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]):
+        for patch, color in zip(
+            boxplot["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]
+        ):
             patch.set_facecolor(color)
 
-        plt.xticks(range(1, len(agents_list)+1), range(1, len(agents_list)+1))  # nur Indizes
-        plt.legend(boxplot["boxes"] + [random_handle], agents_list + ["Random"], loc="best")
-        
+        plt.xticks(
+            range(1, len(agents_list) + 1), range(1, len(agents_list) + 1)
+        )  # nur Indizes
+        plt.legend(
+            boxplot["boxes"] + [random_handle], agents_list + ["Random"], loc="best"
+        )
+
         plt.tight_layout()
         plt.savefig(f"{save_dir}/{file_name}{save_file_postfix}")
         plt.clf()
-
 
 
 def plot_results(
@@ -212,7 +216,7 @@ def read_csv(path_to_file):
 def load_csvs(
     base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
-    results_to_plot = {}
+    results_to_plot = dict[str, tuple[str, str]]()
     if algos_to_plot is None:
         algos_to_plot = os.listdir(base_dir)
     for algo_name in algos_to_plot:
@@ -284,6 +288,7 @@ def plot_seeds():
         env_name=env_name,
     )
 
+
 def create_mean_per_seed(root_dir: str):
     seeds_dir = Path(root_dir) / "seeds"
     out_training = Path(root_dir) / TRAINING
@@ -297,14 +302,12 @@ def create_mean_per_seed(root_dir: str):
     if not seed_dirs:
         raise FileNotFoundError(f"No seed folders '{seeds_dir}' found!")
 
-
     train_rows = []
     val_rows = []
 
     # Union der Spaltennamen (für konsistente Ausgabe über alle Seeds)
     train_cols_union = set()
     val_cols_union = set()
-
 
     for seed in seed_dirs:
         train_csv = seed / "training_results.csv"
@@ -316,12 +319,11 @@ def create_mean_per_seed(root_dir: str):
         if not val_csv.exists():
             raise FileNotFoundError(f"No '{val_csv}' found!")
 
-         # ---------- Training ----------
+        # ---------- Training ----------
         df_training = pd.read_csv(train_csv)
 
         if TRAINING_STEP_COL in df_training.columns:
             df_training = df_training.drop(columns=[TRAINING_STEP_COL])
-
 
         num_training = df_training.select_dtypes(include=[np.number])
         training_means = num_training.mean(numeric_only=True)
@@ -334,7 +336,7 @@ def create_mean_per_seed(root_dir: str):
 
         # ---------- Validation ----------
         df_validation = pd.read_csv(val_csv)
-        
+
         if TRAINING_STEP_COL in df_validation.columns:
             df_validation = df_validation.drop(columns=[TRAINING_STEP_COL])
 
@@ -346,13 +348,11 @@ def create_mean_per_seed(root_dir: str):
         val_rows.append(row_validation)
         val_cols_union.update(validation_means.index.tolist())
 
-
     train_df = pd.DataFrame(train_rows)
     val_df = pd.DataFrame(val_rows)
 
     train_df.to_csv(out_training / MEAN_PER_SEED, index=False)
     val_df.to_csv(out_validation / MEAN_PER_SEED, index=False)
-
 
 
 def load_csv_for_boxplot(
@@ -375,7 +375,8 @@ def load_csv_for_boxplot(
 
     return results_to_plot
 
-def boxplot(plot_training = True ):
+
+def boxplot(plot_training=True):
     env_name = "MountainCar-v0"
     # env_name = "FrozenLake-v1"
 
@@ -391,25 +392,26 @@ def boxplot(plot_training = True ):
 
     save_dir = f"{base_dir}/64x64/_boxplots"
 
-    plot_training_results = plot_training  # toggle to either to plot eval or train results
-
+    plot_training_results = (
+        plot_training  # toggle to either to plot eval or train results
+    )
 
     results_to_plot = load_csv_for_boxplot(
-        base_dir=base_dir, 
-        algos_to_plot=algos_to_plot, 
-        load_training_csvs=plot_training_results
-        )
-    
+        base_dir=base_dir,
+        algos_to_plot=algos_to_plot,
+        load_training_csvs=plot_training_results,
+    )
+
     boxplot_results(
         results_to_plot=results_to_plot,
-        save_dir=save_dir, 
+        save_dir=save_dir,
         is_training_result=plot_training_results,
-        env_name=env_name, 
+        env_name=env_name,
         save_file_postfix="",
-        )
+    )
 
 
-def main_plots(plot_training = True):
+def main_plots(plot_training=True):
     env_name = "MountainCar-v0"
     # env_name = "FrozenLake-v1"
 
@@ -426,7 +428,9 @@ def main_plots(plot_training = True):
     save_dir = f"{base_dir}/64x64/_plots"
     # save_dir = f"{base_dir}/64x64/_plots"
 
-    plot_training_results = plot_training  # toggle to either to plot eval or train results
+    plot_training_results = (
+        plot_training  # toggle to either to plot eval or train results
+    )
     load_head_results = False  # set True to see head plots
 
     results_to_plot = load_csvs(
@@ -435,6 +439,16 @@ def main_plots(plot_training = True):
         load_training_csvs=plot_training_results,
         load_head_results=load_head_results,
     )
+
+    # results_to_plot["Custom_DQN_1qh_bp1.0"] = (
+    #     read_csv(
+    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_mean.csv"
+    #     ),
+    #     read_csv(
+    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_std.csv"
+    #     ),
+    # )
+
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(
         results_to_plot,
