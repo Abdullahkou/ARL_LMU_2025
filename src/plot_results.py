@@ -377,20 +377,35 @@ def load_csv_for_boxplot(
 
 
 def boxplot(plot_training=True):
-    env_name = "MountainCar-v0"
-    # env_name = "FrozenLake-v1"
+    # env_name = "MountainCar-v0"
+    env_name = "FrozenLake-v1"
 
     base_dir = f"results/{env_name}/1.0M"
+    # algos_to_plot = [
+    #     "RANDOM",
+    #     "64x64/Custom_DQN_1qh_auto",
+    #     "64x64/Custom_DQN_1qh_1bs",
+    #     "64x64/Custom_DQN_1qh_05bs",
+    #     "64x64/Custom_DQN_5qh_1bs",
+    #     "64x64/Custom_DQN_5qh_05bs",
+    # ]
+
     algos_to_plot = [
+        # "Custom_DQN_1qh_bp0.5",
+        "128x128_bp0.5/Custom_DQN_1qh_128x128_bp0.5",
+        # "Custom_DQN_5qh_bp0.5",
+        "128x128_bp0.5/Custom_DQN_5qh_128x128_bp0.5",
+        # "Custom_DQN_10qh_bp0.5",
+        "128x128_bp0.5/Custom_DQN_10qh_128x128_bp0.5",
+        # "SB3_DQN",
+        # "SB3_DQN_128x128",
         "RANDOM",
-        "64x64/Custom_DQN_1qh_auto",
-        "64x64/Custom_DQN_1qh_1bs",
-        "64x64/Custom_DQN_1qh_05bs",
-        "64x64/Custom_DQN_5qh_1bs",
-        "64x64/Custom_DQN_5qh_05bs",
     ]
 
-    save_dir = f"{base_dir}/64x64/_boxplots"
+    # save_dir = f"{base_dir}/_plots"
+    save_dir = f"{base_dir}/_plots/128x128_bp0.5/_boxplots"
+
+    # save_dir = f"{base_dir}/64x64/_boxplots"
 
     plot_training_results = (
         plot_training  # toggle to either to plot eval or train results
@@ -439,7 +454,7 @@ def main_plots():
     ]
 
     # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/64x64_bp0.5/"
+    save_dir = f"{base_dir}/_plots/64x64_bp0.5"
 
     # save_dir = f"{base_dir}/64x64/_plots"
     # save_dir = f"{base_dir}/64x64/_plots"
@@ -476,10 +491,10 @@ def main_plots():
 
 
 def main():
-    # plot_training = False
-    # boxplot(plot_training)
+    plot_training = False
+    boxplot(plot_training)
 
-    main_plots()
+    # main_plots()
     # plot_seeds()
 
 
