@@ -595,6 +595,8 @@ class DQNAgent(IAgent):
 
         else:
             # ---- Approximation: Update für alle Heads (aktueller Code) ----
+            q = self.q_net(obs)
+
             for h in range(self.hp.n_q_heads):
                 mask = torch.as_tensor(
                     masks[:, h], dtype=torch.float32, device=self.device
@@ -602,18 +604,18 @@ class DQNAgent(IAgent):
                 if mask.sum() == 0:
                     continue
 
-                q = self.q_net(obs)[:, h]  # [B, n_actions]
-                q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
+                q_h: torch.Tensor = q[:, h]  # [B, n_actions]
+                q_sa = q_h.gather(1, actions.view(-1, 1)).squeeze(1)
 
                 with torch.no_grad():
                     if self.hp.use_ebql:
                         # Ensemble-Target: jeder Head wählt eigene Aktion, Mittelung danach
-                        q_next_targets = self.target_q_net(
+                        q_next_targets: torch.Tensor = self.target_q_net(
                             next_obs
                         )  # [B, n_heads, n_actions]
                         q_next = q_next_targets.max(dim=2).values.mean(dim=1)
                     else:
-                        q_next_target = self.target_q_net(next_obs)[:, h]
+                        q_next_target: torch.Tensor = self.target_q_net(next_obs)[:, h]
                         q_next = q_next_target.max(dim=1).values
 
                     target = rewards + (1.0 - dones) * self.hp.gamma * q_next
