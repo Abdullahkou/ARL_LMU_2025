@@ -20,6 +20,7 @@ from config.training_config import (
     Algorithm,
     load_training_config,
     make_gym,
+    make_gym_vec,
     parse_training_args,
     save_training_config,
 )
@@ -115,10 +116,9 @@ def train(
                 dqn_agent = wrapperAgent.agent
                 num_heads = dqn_agent.hp.n_q_heads
 
-                eval_env_per_head: gym.vector.VectorEnv = gym.make_vec(
-                    id=env_id, num_envs=num_heads
+                eval_env_per_head = make_gym_vec(
+                    id=env_id, num_envs=num_heads, seed=seed
                 )
-                eval_env_per_head.reset(seed=seed)
 
                 heads_dirs = [
                     f"{seed_result_dir}/{HEADS_DIR}/h{head_idx}"

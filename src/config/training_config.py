@@ -9,6 +9,7 @@ from typing import Any
 import gymnasium
 import yaml
 from gymnasium import Env
+from gymnasium.vector import VectorEnv
 
 from utils.env_wrapper import ObsArrayWrapper, SafeActionWrapper
 
@@ -78,12 +79,50 @@ def deserialize(cls, data):
     return cls(**kwargs)
 
 
-def make_gym(id: str, seed=42, render_mode: str | None = None) -> Env:
-    env = gymnasium.make(id=id, render_mode=render_mode)
-    env.reset(seed=seed)
+def __get_atari_args(id: str):
+    atari_args = {}
+    if "ALE" in id:
+        import ale_py  # noqa: F401
 
+        atari_args["obs_type"] = "ram"
+
+        atari_args["mode"] = 0
+        atari_args["difficulty"] = 0
+
+        # controls stochasticity
+        atari_args["repeat_action_probability"] = 0
+        atari_args["frameskip"] = 4
+
+    return atari_args
+
+
+def __wrap_and_seed(env: Env, seed: int):
     env = ObsArrayWrapper(env)
     env = SafeActionWrapper(env)
+
+    env.reset(seed=seed)
+
+    return env
+
+
+def make_gym(id: str, seed=42, render_mode: str | None = None) -> Env:
+    # Atari
+    atari_args = __get_atari_args(id)
+
+    env = gymnasium.make(id=id, render_mode=render_mode, **atari_args)
+
+    env = __wrap_and_seed(env, seed)
+
+    return env
+
+
+def make_gym_vec(id: str, num_envs: int, seed=42):
+    # Atari
+    atari_args = __get_atari_args(id)
+
+    env = gymnasium.make_vec(id=id, num_envs=num_envs, **atari_args)
+
+    env: VectorEnv = __wrap_and_seed(seed, env)
 
     return env
 
@@ -105,6 +144,7 @@ class Environments(Enum):
     MOUNTAIN_CAR = "MountainCar-v0"
     TAXI = "Taxi-v3"
     CARTPOLE_V1 = "CartPole-v1"
+    BREAKOUT = "ALE/Breakout-v5"
 
 
 class EnsembleAggregation(Enum):
