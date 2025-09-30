@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional
+from warnings import warn_explicit
 
 import numpy as np
 import torch
@@ -17,30 +17,6 @@ from agents.components.q_network import IndependentQNetwork, QNetwork
 from agents.components.replay_buffer import ReplayBuffer
 from config.training_config import AlgoConfig
 from utils.logging import TrainLogger
-
-
-@dataclass
-class DQNHyperParams:
-    gamma: float = 0.99
-    learning_rate: float = 3e-4
-    batch_size: int = 256
-    buffer_size: int = 30_000
-    learning_starts: int = 3_000
-    train_freq: int = 1  # env steps per gradient step
-    gradient_steps: int = 1  # how many SGD steps per train call
-    target_update_interval: int = 1_000  # in env steps
-    tau: float = 1.0  # hard update by default; set <1.0 for soft update
-    max_epsilon: float = 0.5
-    min_epsilon: float = 0.05
-    epsilon_decay_steps: int = 250_000  # linear decay steps
-    clip_grad_norm: Optional[float] = 10.0
-    double_q: bool = True  # enable Double DQN
-    dueling: bool = False  # enable Dueling DQN
-    n_q_heads: int = 3  # multiple Q heads for ensembles/uncertainty
-    hidden_sizes: Tuple[int, ...] = (256, 256)  # MLP
-    use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
-    independent_heads: bool = False  # shared encoder vs. completely independent
-    ebql_strict: bool = True  # use strict EBQL (one head update per step)
 
 
 class DQNAgent(IAgent):
@@ -79,10 +55,10 @@ class DQNAgent(IAgent):
         # networks
 
         if getattr(self.hp, "independent_heads", False):
-            print("Using IndependentQNetwork with separate encoders per head.")
+            # print("Using IndependentQNetwork with separate encoders per head.")
             NetClass = IndependentQNetwork
         else:
-            print("Using QNetwork with shared encoder.")
+            # print("Using QNetwork with shared encoder.")
             NetClass = QNetwork
 
         self.q_net = NetClass(
@@ -101,17 +77,22 @@ class DQNAgent(IAgent):
             n_heads=self.hp.n_q_heads,
         ).to(self.device)
 
-        print(
-            f"Q-Network has {sum(p.numel() for p in self.q_net.parameters() if p.requires_grad)} trainable parameters."
-        )
-        print(
-            f"Target Q-Network has {sum(p.numel() for p in self.target_q_net.parameters() if p.requires_grad)} trainable parameters."
-        )
+        # print(
+        #     f"Q-Network has {sum(p.numel() for p in self.q_net.parameters() if p.requires_grad)} trainable parameters."
+        # )
+        # print(
+        #     f"Target Q-Network has {sum(p.numel() for p in self.target_q_net.parameters() if p.requires_grad)} trainable parameters."
+        # )
 
         print(self.q_net)
         print(self.target_q_net)
         print("-----")
-        ebql_strict = getattr(self.hp, "ebql_strict", False)
+
+        ebql_strict = self.hp.ebql_strict
+        if ebql_strict:
+            assert self.hp.n_q_heads > 1, (
+                "Strict EBQL doesnt work with less than 2 heads!"
+            )
         print(f"EBQL strict mode: {ebql_strict}")
 
         # self.q_net = QNetwork(
@@ -134,6 +115,24 @@ class DQNAgent(IAgent):
         self.target_q_net.eval()
 
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=self.hp.learning_rate)
+
+        #bootstrap_prob = 0.5
+        #boostrap_prob_field = self.hp.bootstrap_prob
+        #if boostrap_prob_field == "auto":
+        #    bootstrap_prob = 1 / self.hp.n_q_heads
+        #else:
+        #    assert isinstance(boostrap_prob_field, float)
+
+#            if (
+ #               self.hp.ebql_strict
+  #              and self.hp.n_q_heads == 1
+   #             and boostrap_prob_field != 1
+    #        ):
+     #           warn_explicit(
+      #              f"using 1qh with bootstrap_prob {boostrap_prob_field} != 'auto'"
+       #         )
+#
+ #           bootstrap_prob = boostrap_prob_field
 
         self.replay = ReplayBuffer(
             capacity=self.hp.buffer_size,
@@ -540,7 +539,7 @@ class DQNAgent(IAgent):
             batch["masks"],
         )
 
-        loss_total = 0.0
+        loss_total: torch.Tensor = None
         head_losses = []
 
         # --- Unterschied: Paper-EBQL vs. Approximation ---
@@ -591,7 +590,7 @@ class DQNAgent(IAgent):
 
                 # Loss nur für den aktiven Head
                 loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
-                loss_total += loss
+                loss_total = loss
                 head_losses.append(loss.item())
 
         else:
@@ -620,7 +619,11 @@ class DQNAgent(IAgent):
                     target = rewards + (1.0 - dones) * self.hp.gamma * q_next
 
                 loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
-                loss_total += loss
+
+                if loss_total is None:
+                    loss_total = loss
+                else:
+                    loss_total += loss
                 head_losses.append(loss.item())
 
         # Backprop

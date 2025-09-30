@@ -103,8 +103,8 @@ class Environments(Enum):
     LUNAR_LANDER = "LunarLander-v3"
     TAXI = "Taxi-v3"
     FROZEN_LAKE = "FrozenLake-v1"
-    CARTPOLE_V1 = "CartPole-v1"
-
+    CARTPOLE_V1 = "CartPole-v1" 
+    MountainCar = "MountainCar-v0"
 
 class EnsembleAggregation(Enum):
     AVG = "avg"
@@ -131,7 +131,7 @@ class HyperParams:
     n_q_heads: int = 10  # multiple Q heads for ensembles/uncertainty
     hidden_sizes: tuple[int, ...] = (256, 256)  # MLP
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
-    independent_heads: bool = False  # shared encoder vs. completely independent
+    independent_heads: bool = True  # shared encoder vs. completely independent
     ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
     ebql_strict: bool = True 
 
