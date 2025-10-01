@@ -16,11 +16,11 @@ RANDOM_AGENT = "Random Agent"
 
 
 def boxplot_results(
-    results_to_plot,
-    save_dir: str,
-    env_name="",
-    is_training_result=False,
-    save_file_postfix="",
+        results_to_plot,
+        save_dir: str,
+        env_name="",
+        is_training_result=False,
+        save_file_postfix="",
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -64,7 +64,7 @@ def boxplot_results(
             if col_name not in means:
                 continue
             if col_name == VALUE_ERROR and (
-                "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
+                    "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
             ):
                 continue
             data = means[col_name].values.astype(float)
@@ -93,7 +93,7 @@ def boxplot_results(
 
         # Farben anpassen
         for patch, color in zip(
-            boxplot["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]
+                boxplot["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]
         ):
             patch.set_facecolor(color)
 
@@ -110,13 +110,13 @@ def boxplot_results(
 
 
 def plot_results(
-    results_to_plot,
-    save_dir: str,
-    env_name="",
-    is_training_result=False,
-    interval_x_axis: int | None = 5,
-    color_in_std=True,
-    save_file_postfix="",
+        results_to_plot,
+        save_dir: str,
+        env_name="",
+        is_training_result=False,
+        interval_x_axis: int | None = 5,
+        color_in_std=True,
+        save_file_postfix="",
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -166,7 +166,7 @@ def plot_results(
             if "/" in agent_name:
                 agent_name = agent_name.split("/")[-1]
             if col_name == VALUE_ERROR and (
-                "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
+                    "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
             ):
                 continue
             mean = means[col_name].values.astype(float)
@@ -214,7 +214,7 @@ def read_csv(path_to_file):
 
 
 def load_csvs(
-    base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
+        base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
     results_to_plot = dict[str, tuple[str, str]]()
     if algos_to_plot is None:
@@ -356,7 +356,7 @@ def create_mean_per_seed(root_dir: str):
 
 
 def load_csv_for_boxplot(
-    base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
+        base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
     results_to_plot = {}
     if algos_to_plot is None:
@@ -376,22 +376,7 @@ def load_csv_for_boxplot(
     return results_to_plot
 
 
-def boxplot():
-    # env_name = "MountainCar-v0"
-    env_name = "LunarLander-v3"
-
-    base_dir = f"results/{env_name}/1.0M"
-
-    # The second item will appear on the legend.
-    algos_to_plot = [
-        ("Custom_DQN_1qh_128_dep_bp0.5", "Custom DQN (1 head)"),
-        ("Custom_DQN_5qh_128_dep_bp0.5", "Custom DQN (5 heads)"),
-        ("Custom_DQN_10qh_128_dep_bp0.5", "Custom DQN (10 heads)"),
-        ("RANDOM", "Random Agent")
-    ]
-
-    save_dir = f"{base_dir}/_boxplots/128x128/"
-
+def boxplot(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
     train_results_to_plot = load_csv_for_boxplot(
         base_dir=base_dir,
         algos_to_plot=algos_to_plot,
@@ -409,7 +394,7 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=True,
         env_name=env_name,
-        save_file_postfix="128",
+        save_file_postfix=save_file_postfix,
     )
 
     boxplot_results(
@@ -417,26 +402,11 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=False,
         env_name=env_name,
-        save_file_postfix="128",
+        save_file_postfix=save_file_postfix,
     )
 
 
-def main_plots():
-    # env_name = "MountainCar-v0"
-    env_name = "LunarLander-v3"
-
-    base_dir = f"results/{env_name}/1.0M"
-
-    # The second item will appear on the legend.
-    algos_to_plot = [
-        ("Custom_DQN_1qh_128_dep_bp0.5", "Custom DQN (1 head)"),
-        ("Custom_DQN_5qh_128_dep_bp0.5", "Custom DQN (5 heads)"),
-        ("Custom_DQN_10qh_128_dep_bp0.5", "Custom DQN (10 heads)"),
-        ("RANDOM", "Random Agent")
-    ]
-
-    save_dir = f"{base_dir}/_plots/128x128"
-
+def main_plots(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
     load_head_results = False  # set True to see head plots
 
     train_results_to_plot = load_csvs(
@@ -460,7 +430,7 @@ def main_plots():
         is_training_result=True,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="128",
+        save_file_postfix="",
     )
 
     plot_results(
@@ -469,15 +439,36 @@ def main_plots():
         is_training_result=False,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="128",
+        save_file_postfix=save_file_postfix,
     )
 
 
 def main():
-    plot_training = False
-    boxplot()
+    env_name = "LunarLander-v3"
+    base_dir = f"results/{env_name}/1.0M"
 
-    main_plots()
+    # The second item will appear on the legend.
+    algos_to_plot = [
+        # ("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
+        ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
+        # ("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
+        # ("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
+        ("Custom_DQN_5qh_32_dep_bp0.5", "EBQL Non Strict (5 head)"),
+        # ("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
+        ("RANDOM", "Random Agent")
+    ]
+
+    boxplot(algos_to_plot,
+            env_name=env_name,
+            base_dir=base_dir,
+            save_dir=f"{base_dir}/_boxplots/32x32",
+            save_file_postfix="")
+
+    main_plots(algos_to_plot,
+               env_name=env_name,
+               base_dir=base_dir,
+               save_dir=f"{base_dir}/_plots/32x32",
+               save_file_postfix="")
     # plot_seeds()
 
 
