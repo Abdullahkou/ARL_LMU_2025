@@ -4,13 +4,15 @@ import json
 import os
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
+from functools import partial
 from typing import Any
 
 import gymnasium
 import yaml
 from gymnasium import Env
+from gymnasium.wrappers import TimeLimit
 
-from utils.env_wrapper import ObsArrayWrapper, SafeActionWrapper
+from utils.env_wrapper import AutoOneHotWrapper, SafeActionWrapper
 
 RANDOM_AGENT = "RANDOM"
 
@@ -78,12 +80,48 @@ def deserialize(cls, data):
     return cls(**kwargs)
 
 
-def make_gym(id: str, seed=42, render_mode: str | None = None) -> Env:
-    env = gymnasium.make(id=id, render_mode=render_mode)
+def __get_special_args(id: str):
+    args = {}
+    match id:
+        case "Taxi-v3":
+            args["is_rainy"] = True
+            args["fickle_passenger"] = True
+        case "CliffWalking-v1":
+            args["is_slippery"] = True
+
+    return args
+
+
+def __wrap_and_seed(env: Env, id: str, seed: int):
+    env = AutoOneHotWrapper(env)
+    env = SafeActionWrapper(env)
+
+    if id == "CliffWalking-v1":
+        env = TimeLimit(env, max_episode_steps=100)
+
     env.reset(seed=seed)
 
-    env = ObsArrayWrapper(env)
-    env = SafeActionWrapper(env)
+    return env
+
+
+def make_gym(id: str, seed=42, render_mode: str | None = None) -> Env:
+    # special args
+    args = __get_special_args(id)
+
+    env = gymnasium.make(id=id, render_mode=render_mode, **args)
+
+    env = __wrap_and_seed(env, id, seed)
+
+    return env
+
+
+def make_gym_vec(id: str, num_envs: int, seed=42):
+    # special args
+    args = __get_special_args(id)
+
+    wrapper_fn = partial(__wrap_and_seed, id=id, seed=seed)
+
+    env = gymnasium.make_vec(id=id, num_envs=num_envs, wrappers=[wrapper_fn], **args)
 
     return env
 
@@ -104,6 +142,7 @@ class Environments(Enum):
     FROZEN_LAKE = "FrozenLake-v1"
     MOUNTAIN_CAR = "MountainCar-v0"
     TAXI = "Taxi-v3"
+    CLIFFWALKING = "CliffWalking-v1"
     CARTPOLE_V1 = "CartPole-v1"
 
 
