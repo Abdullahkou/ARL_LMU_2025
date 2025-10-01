@@ -412,7 +412,7 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=True,
         env_name=env_name,
-        save_file_postfix="128",
+        save_file_postfix="",
     )
 
     boxplot_results(
@@ -420,7 +420,7 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=False,
         env_name=env_name,
-        save_file_postfix="128",
+        save_file_postfix="",
     )
 
 
