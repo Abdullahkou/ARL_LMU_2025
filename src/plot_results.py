@@ -443,23 +443,22 @@ def main_plots():
 
     algos_to_plot = [
         # "Custom_DQN_1qh_bp0.5",
-        "Custom_DQN_1qh_64x64_bp0.5",
-        # "Custom_DQN_5qh_bp0.5",
-        "Custom_DQN_5qh_64x64_bp0.5",
+        "16x16_bp0.5/Custom_DQN_1qh_16x16_bp0.5",
+        "16x16_bp0.5/Custom_DQN_5qh_16x16_bp0.5",
         # "Custom_DQN_10qh_bp0.5",
-        "Custom_DQN_10qh_64x64_bp0.5",
+        # "Custom_DQN_10qh_16x16_bp0.5",
         # "SB3_DQN",
-        # "SB3_DQN_64x64",
-        "RANDOM",
+        # "SB3_DQN_16x16",
+        # "RANDOM",
     ]
 
     # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/64x64_bp0.5"
+    save_dir = f"{base_dir}/_plots/16x16_bp0.5_test"
 
     # save_dir = f"{base_dir}/64x64/_plots"
     # save_dir = f"{base_dir}/64x64/_plots"
 
-    plot_training_results = True  # toggle to either to plot eval or train results
+    plot_training_results = False  # toggle to either to plot eval or train results
 
     load_head_results = False  # set True to see head plots
 
@@ -470,14 +469,22 @@ def main_plots():
         load_head_results=load_head_results,
     )
 
-    # results_to_plot["Custom_DQN_1qh_bp1.0"] = (
+    # results_to_plot["1qh_test"] = (
     #     read_csv(
-    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_mean.csv"
+    #         "results/test/FrozenLake-v1/1.0M/Custom_DQN_1qh_16x16_bp0.5/Validation_Results/sma_mean.csv"
     #     ),
     #     read_csv(
-    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_std.csv"
+    #         "results/test/FrozenLake-v1/1.0M/Custom_DQN_1qh_16x16_bp0.5/Validation_Results/sma_std.csv"
     #     ),
     # )
+    results_to_plot["5qh_test"] = (
+        read_csv(
+            "results/test/FrozenLake-v1/1.0M/Custom_DQN_5qh_16x16_bp0.5/Validation_Results/sma_mean.csv"
+        ),
+        read_csv(
+            "results/test/FrozenLake-v1/1.0M/Custom_DQN_5qh_16x16_bp0.5/Validation_Results/sma_std.csv"
+        ),
+    )
 
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(
@@ -491,10 +498,10 @@ def main_plots():
 
 
 def main():
-    plot_training = False
-    boxplot(plot_training)
+    # plot_training = False
+    # boxplot(plot_training)
 
-    # main_plots()
+    main_plots()
     # plot_seeds()
 
 
