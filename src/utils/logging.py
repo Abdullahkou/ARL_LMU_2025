@@ -62,7 +62,8 @@ class TrainLogger:
             self.__save_bulk(self.steps)
 
     def __save_bulk(self, current_training_step: int):
-        result = (self.reward, self.value_error)
+        reward_per_step = self.reward / self.log_interval
+        result = (reward_per_step, self.value_error)
 
         self.episode_results.append(result)
 
