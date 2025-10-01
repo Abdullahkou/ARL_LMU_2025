@@ -384,12 +384,12 @@ def boxplot():
 
     # The second item will appear on the legend.
     algos_to_plot = [
-        ("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
+        #("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
         ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
-        ("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
-        ("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
+        #("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
+        #("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
         ("Custom_DQN_5qh_32_dep_bp0.5", "EBQL Non Strict (5 head)"),
-        ("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
+        #("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
         ("RANDOM", "Random Agent")
     ]
 
@@ -412,7 +412,7 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=True,
         env_name=env_name,
-        save_file_postfix="",
+        save_file_postfix="5qh",
     )
 
     boxplot_results(
@@ -420,7 +420,7 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=False,
         env_name=env_name,
-        save_file_postfix="",
+        save_file_postfix="5qh",
     )
 
 
@@ -432,12 +432,12 @@ def main_plots():
 
     # The second item will appear on the legend.
     algos_to_plot = [
-        ("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
+        #("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
         ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
-        ("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
-        ("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
+        #("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
+        #("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
         ("Custom_DQN_5qh_32_dep_bp0.5", "EBQL Non Strict (5 head)"),
-        ("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
+        #("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
         ("RANDOM", "Random Agent")
     ]
 
@@ -466,7 +466,7 @@ def main_plots():
         is_training_result=True,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="",
+        save_file_postfix="5qh",
     )
 
     plot_results(
@@ -475,7 +475,7 @@ def main_plots():
         is_training_result=False,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="",
+        save_file_postfix="5qh",
     )
 
 
