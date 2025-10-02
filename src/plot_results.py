@@ -421,20 +421,20 @@ def boxplot():
 
 def main_plots():
     # env_name = "MountainCar-v0"
-    env_name = "Taxi-v3"
+    env_name = "MountainCar-v0"
 
-    base_dir = f"results/{env_name}/200.0K"
+    base_dir = f"results/{env_name}/500.0K"
 
     # The second item will appear on the legend.
     algos_to_plot = [
-        ("Custom_DQN_1qh_64x64_bp0.5.old", "EBQL (1 head bp0.5)"),
-        # ("Custom_DQN_1qh_64x64_bp1.0.old", "EBQL (1 head bp1.0)"),
-        ("Custom_DQN_5qh_s_64x64_bp0.5", "Strict EBQL (5 heads bp0.5)"),
-        ("Custom_DQN_10qh_s_64x64_bp0.5", "Strict EBQL (10 heads bp0.5)"),
-        ("RANDOM", "Random Agent"),
+        # ("Custom_DQN_1qh_64x64_bp0.5", "EBQL (1 head bp0.5)"),
+        ("Custom_DQN_1qh_64x64_bp1.0", "EBQL (1 head bp1.0)"),
+        ("Custom_DQN_5qh_64x64_bp0.5", "EBQL (5 heads bp0.5)"),
+        ("Custom_DQN_10qh_64x64_bp0.5", "EBQL (10 heads bp0.5)"),
+        # ("RANDOM", "Random Agent"),
     ]
 
-    save_dir = f"{base_dir}/_plots/strict_bp0.5"
+    save_dir = f"{base_dir}/_plots/opt"
 
     load_head_results = False  # set True to see head plots
 
