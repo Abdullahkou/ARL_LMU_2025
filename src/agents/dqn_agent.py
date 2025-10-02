@@ -198,6 +198,7 @@ class DQNAgent(IAgent):
         """
         obs, _ = self.env.reset(seed=self.seed)
         self.active_head = self.rng.integers(0, self.hp.n_q_heads)
+
         ep_return = 0.0
         ep_len = 0
         pbar = tqdm(total=total_steps, desc="Training", unit="step")
@@ -213,7 +214,12 @@ class DQNAgent(IAgent):
             while self.global_step < total_steps:
                 pbar.update(1)
 
-                action = self._select_action(obs, deterministic=False)
+                action = None
+                if self.hp.single_head_action_select:
+                    action = self._select_action_active_head(obs, deterministic=False)
+                else:
+                    action = self._select_action(obs, deterministic=False)
+
                 next_obs, reward, terminated, truncated, info = self.env.step(action)
                 done = terminated or truncated
 
@@ -322,7 +328,7 @@ class DQNAgent(IAgent):
 
         q_used: torch.Tensor
         if q.ndim == 3:
-            if getattr(self.hp, "use_ebql", False):
+            if self.hp.use_ebql:
                 # EBQL: Mittelung über alle Heads
                 q_used = q.mean(dim=1)  # [B, n_actions]
             else:
@@ -447,6 +453,35 @@ class DQNAgent(IAgent):
         action, _ = self.predict(obs, deterministic=deterministic)
         return int(action)
 
+    def _select_action_active_head(
+        self, obs: np.ndarray, deterministic: bool = False
+    ) -> int:
+        if obs.ndim == len(self.obs_shape):
+            obs_batch = np.expand_dims(obs, axis=0)
+        else:
+            obs_batch = obs
+
+        obs_t = torch.as_tensor(obs_batch, dtype=torch.float32, device=self.device)
+        q = self.q_net(
+            obs_t
+        )  # [B, n_heads, n_actions] oder [B, n_actions] janahch ob multi-head oder nicht
+
+        q_used: torch.Tensor
+        if q.ndim == 3:
+            # Bootstrapped DQN: nur aktiver Head
+            q_used = q[:, self.active_head]
+        else:
+            q_used = q
+
+        if self.rng.random() < self.epsilon:
+            act = self.rng.integers(0, self.n_actions, size=(obs_batch.shape[0],))
+        else:
+            act = torch.argmax(q_used, dim=-1).cpu().numpy()
+
+        action = act if obs.ndim > len(self.obs_shape) else act[0]
+
+        return int(action)
+
     # _sgd_step MIT EBQL
     # def _sgd_step(self) -> Dict[str, float]:
     #     batch = self._sample_batch()
@@ -561,7 +596,7 @@ class DQNAgent(IAgent):
         #   Nachteil: weniger theoretisch korrekt, weniger Diversität zwischen Heads.
         #
 
-        ebql_strict = getattr(self.hp, "ebql_strict", False)
+        ebql_strict = self.hp.ebql_strict
 
         if ebql_strict:
             # ---- Strict EBQL: nur ein zufälliger Head trainieren ----
@@ -642,7 +677,7 @@ class DQNAgent(IAgent):
             loss_per_head = losses.sum(dim=0) / (mask.sum(dim=0) + 1e-8)  # [n_heads]
 
             # Sum over heads for total loss
-            loss_total = loss_per_head.sum()
+            loss_total = loss_per_head.mean()
 
             # array for logging
             head_losses = loss_per_head.detach().cpu().numpy()
