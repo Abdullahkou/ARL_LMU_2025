@@ -7,7 +7,7 @@ algo_config:
         clip_grad_norm: 10.0
         double_q: true
         dueling: false
-        ebql_strict: true
+        ebql_strict: false
         ensemble_aggregation: avg
         epsilon_decay_steps: 250000
         gamma: 0.99
