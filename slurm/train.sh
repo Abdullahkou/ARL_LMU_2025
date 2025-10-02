@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J tx_1qh
+#SBATCH -J tx_1q_b1
 #SBATCH -D ./
 #SBATCH --partition=All
 

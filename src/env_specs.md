@@ -1,9 +1,9 @@
 LunarLander-v3:
-  - layers: 64x64 or 128x128
+  - layers: 64x64
   - steps: 500k
 
 MountainCar-v0:
-  - layers: 64x64 or 128x128
+  - layers: 64x64
   - steps: 500k
 
 FrozenLake-v1 (slippery):
