@@ -73,7 +73,7 @@ def boxplot_results(
 
             # random agent represented by horizontal line due to no training progress
             if agent_name == RANDOM_AGENT:
-                random_handle = plt.axhline(
+                plt.axhline(
                     y=np.nanmean(data, axis=0),
                     linestyle="--",
                     label=agent_name,
@@ -100,9 +100,7 @@ def boxplot_results(
         plt.xticks(
             range(1, len(agents_list) + 1), range(1, len(agents_list) + 1)
         )  # nur Indizes
-        plt.legend(
-            boxplot["boxes"], agents_list + ["Random"], loc="best"
-        )
+        plt.legend(boxplot["boxes"], agents_list + ["Random"], loc="best")
 
         plt.tight_layout()
         plt.savefig(f"{save_dir}/{file_name}")
@@ -387,7 +385,7 @@ def boxplot():
         ("Custom_DQN_1qh_128_dep_bp0.5", "Custom DQN (1 head)"),
         ("Custom_DQN_5qh_128_dep_bp0.5", "Custom DQN (5 heads)"),
         ("Custom_DQN_10qh_128_dep_bp0.5", "Custom DQN (10 heads)"),
-        ("RANDOM", "Random Agent")
+        ("RANDOM", "Random Agent"),
     ]
 
     save_dir = f"{base_dir}/_boxplots/128x128/"
@@ -423,19 +421,20 @@ def boxplot():
 
 def main_plots():
     # env_name = "MountainCar-v0"
-    env_name = "LunarLander-v3"
+    env_name = "Taxi-v3"
 
-    base_dir = f"results/{env_name}/1.0M"
+    base_dir = f"results/{env_name}/200.0K"
 
     # The second item will appear on the legend.
     algos_to_plot = [
-        ("Custom_DQN_1qh_128_dep_bp0.5", "Custom DQN (1 head)"),
-        ("Custom_DQN_5qh_128_dep_bp0.5", "Custom DQN (5 heads)"),
-        ("Custom_DQN_10qh_128_dep_bp0.5", "Custom DQN (10 heads)"),
-        ("RANDOM", "Random Agent")
+        ("Custom_DQN_1qh_64x64_bp0.5.old", "EBQL (1 head bp0.5)"),
+        # ("Custom_DQN_1qh_64x64_bp1.0.old", "EBQL (1 head bp1.0)"),
+        ("Custom_DQN_5qh_s_64x64_bp0.5", "Strict EBQL (5 heads bp0.5)"),
+        ("Custom_DQN_10qh_s_64x64_bp0.5", "Strict EBQL (10 heads bp0.5)"),
+        ("RANDOM", "Random Agent"),
     ]
 
-    save_dir = f"{base_dir}/_plots/128x128"
+    save_dir = f"{base_dir}/_plots/strict_bp0.5"
 
     load_head_results = False  # set True to see head plots
 
@@ -460,7 +459,7 @@ def main_plots():
         is_training_result=True,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="128",
+        save_file_postfix="",
     )
 
     plot_results(
@@ -469,13 +468,13 @@ def main_plots():
         is_training_result=False,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="128",
+        save_file_postfix="",
     )
 
 
 def main():
-    plot_training = False
-    boxplot()
+    # plot_training = False
+    # boxplot()
 
     main_plots()
     # plot_seeds()
