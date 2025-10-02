@@ -12,7 +12,7 @@ from utils.logging import REWARD, STEPS, TRAINING_STEP_COL, VALUE_ERROR
 VALIDATION = "Validation_Results"
 TRAINING = "Training_Results"
 MEAN_PER_SEED = "mean_per_seed.csv"
-RANDOM_AGENT = "RANDOM"
+RANDOM_AGENT = "Random Agent"
 
 
 def boxplot_results(
@@ -29,7 +29,7 @@ def boxplot_results(
         (
             REWARD,
             "Reward",
-            f"{'training' if is_training_result else 'validation'}_reward.png",
+            f"{'training' if is_training_result else 'validation'}_reward_{save_file_postfix}.png",
         )
     ]
     if is_training_result:
@@ -37,7 +37,7 @@ def boxplot_results(
             (
                 VALUE_ERROR,
                 "Value Error",
-                f"{'training' if is_training_result else 'validation'}_value_error.png",
+                f"{'training' if is_training_result else 'validation'}_value_error_{save_file_postfix}.png",
             )
         )
     else:
@@ -45,7 +45,7 @@ def boxplot_results(
             (
                 STEPS,
                 "Steps",
-                f"{'training' if is_training_result else 'validation'}_steps.png",
+                f"{'training' if is_training_result else 'validation'}_steps_{save_file_postfix}.png",
             )
         )
 
@@ -53,7 +53,7 @@ def boxplot_results(
         plt.rcParams["figure.figsize"] = (12, 7)
         plt.margins(x=0)
         plt.title(
-            f"{env_name} {'Training' if is_training_result else 'Validation'} {title}"
+            f"{env_name.split('-')[0]} {'Training' if is_training_result else 'Validation'} {title}"
         )
         plt.xlabel("Agents")
         plt.ylabel(col_name)
@@ -73,7 +73,7 @@ def boxplot_results(
 
             # random agent represented by horizontal line due to no training progress
             if agent_name == RANDOM_AGENT:
-                random_handle = plt.axhline(
+                plt.axhline(
                     y=np.nanmean(data, axis=0),
                     linestyle="--",
                     label=agent_name,
@@ -100,12 +100,10 @@ def boxplot_results(
         plt.xticks(
             range(1, len(agents_list) + 1), range(1, len(agents_list) + 1)
         )  # nur Indizes
-        plt.legend(
-            boxplot["boxes"] + [random_handle], agents_list + ["Random"], loc="best"
-        )
+        plt.legend(boxplot["boxes"], agents_list + ["Random"], loc="best")
 
         plt.tight_layout()
-        plt.savefig(f"{save_dir}/{file_name}{save_file_postfix}")
+        plt.savefig(f"{save_dir}/{file_name}")
         plt.clf()
 
 
@@ -130,7 +128,7 @@ def plot_results(
         (
             REWARD,
             "Reward",
-            f"{'training' if is_training_result else 'validation'}_reward{'_with_heads' if heads_present else ''}.png",
+            f"{'training' if is_training_result else 'validation'}_reward{'_with_heads' if heads_present else ''}_{save_file_postfix}.png",
         )
     ]
     if is_training_result:
@@ -138,7 +136,7 @@ def plot_results(
             (
                 VALUE_ERROR,
                 "Value Error",
-                f"{'training' if is_training_result else 'validation'}_value_error.png",
+                f"{'training' if is_training_result else 'validation'}_value_error_{save_file_postfix}.png",
             )
         )
     else:
@@ -146,7 +144,7 @@ def plot_results(
             (
                 STEPS,
                 "Steps",
-                f"{'training' if is_training_result else 'validation'}_steps{'_with_heads' if heads_present else ''}.png",
+                f"{'training' if is_training_result else 'validation'}_steps{'_with_heads' if heads_present else ''}_{save_file_postfix}.png",
             )
         )
 
@@ -154,7 +152,7 @@ def plot_results(
         plt.rcParams["figure.figsize"] = (12, 7)
         plt.margins(x=0)
         plt.title(
-            f"{env_name} {'Training' if is_training_result else 'Validation'} {title}"
+            f"{env_name.split('-')[0]} {'Training' if is_training_result else 'Validation'} {title}"
         )
 
         plt.xlabel(x_label)
@@ -203,7 +201,7 @@ def plot_results(
         # Customize y-axis and x-axis to start at 0
         # plt.ylim(bottom=0)
         plt.xlim(left=0)
-        plt.savefig(f"{save_dir}/{file_name}{save_file_postfix}")
+        plt.savefig(f"{save_dir}/{file_name}")
         plt.clf()
 
 
@@ -219,25 +217,25 @@ def load_csvs(
     results_to_plot = dict[str, tuple[str, str]]()
     if algos_to_plot is None:
         algos_to_plot = os.listdir(base_dir)
-    for algo_name in algos_to_plot:
+    for algo_dir, legend_label in algos_to_plot:
         results_dir = (
-            f"{base_dir}/{algo_name}/{TRAINING if load_training_csvs else VALIDATION}/"
+            f"{base_dir}/{algo_dir}/{TRAINING if load_training_csvs else VALIDATION}/"
         )
         path_to_mean = f"{results_dir}/{SMA_MEAN_FILE}"
         path_to_std = f"{results_dir}/{SMA_STD_FILE}"
 
         mean_df = read_csv(path_to_mean)
         std_df = read_csv(path_to_std)
-        results_to_plot[algo_name] = (mean_df, std_df)
+        results_to_plot[legend_label] = (mean_df, std_df)
 
-        algo_heads_dir = f"{base_dir}/{algo_name}/{HEADS_DIR}"
+        algo_heads_dir = f"{base_dir}/{algo_dir}/{HEADS_DIR}"
         if load_head_results and os.path.isdir(algo_heads_dir):
             for head in os.listdir(algo_heads_dir):
                 path_to_head_mean = f"{algo_heads_dir}/{head}/{SMA_MEAN_FILE}"
                 path_to_head_std = f"{algo_heads_dir}/{head}/{SMA_STD_FILE}"
                 head_mean_df = read_csv(path_to_head_mean)
                 head_std_df = read_csv(path_to_head_std)
-                results_to_plot[f"{algo_name}_{head}"] = (head_mean_df, head_std_df)
+                results_to_plot[f"{algo_dir}_{head}"] = (head_mean_df, head_std_df)
     return results_to_plot
 
 
@@ -361,140 +359,124 @@ def load_csv_for_boxplot(
     results_to_plot = {}
     if algos_to_plot is None:
         algos_to_plot = os.listdir(base_dir)
-    for algo_name in algos_to_plot:
+    for algo_dir, legend_label in algos_to_plot:
         results_dir = (
-            f"{base_dir}/{algo_name}/{TRAINING if load_training_csvs else VALIDATION}/"
+            f"{base_dir}/{algo_dir}/{TRAINING if load_training_csvs else VALIDATION}/"
         )
         path_to_mean_per_seed = f"{results_dir}/{MEAN_PER_SEED}"
 
         if not os.path.exists(path_to_mean_per_seed):
-            create_mean_per_seed(root_dir=f"{base_dir}/{algo_name}")
+            create_mean_per_seed(root_dir=f"{base_dir}/{algo_dir}")
 
         mean_df = read_csv(path_to_mean_per_seed)
-        results_to_plot[algo_name] = mean_df
+        results_to_plot[legend_label] = mean_df
 
     return results_to_plot
 
 
-def boxplot(plot_training=True):
+def boxplot():
     # env_name = "MountainCar-v0"
-    env_name = "FrozenLake-v1"
+    env_name = "LunarLander-v3"
 
     base_dir = f"results/{env_name}/1.0M"
-    # algos_to_plot = [
-    #     "RANDOM",
-    #     "64x64/Custom_DQN_1qh_auto",
-    #     "64x64/Custom_DQN_1qh_1bs",
-    #     "64x64/Custom_DQN_1qh_05bs",
-    #     "64x64/Custom_DQN_5qh_1bs",
-    #     "64x64/Custom_DQN_5qh_05bs",
-    # ]
 
+    # The second item will appear on the legend.
     algos_to_plot = [
-        # "Custom_DQN_1qh_bp0.5",
-        "128x128_bp0.5/Custom_DQN_1qh_128x128_bp0.5",
-        # "Custom_DQN_5qh_bp0.5",
-        "128x128_bp0.5/Custom_DQN_5qh_128x128_bp0.5",
-        # "Custom_DQN_10qh_bp0.5",
-        "128x128_bp0.5/Custom_DQN_10qh_128x128_bp0.5",
-        # "SB3_DQN",
-        # "SB3_DQN_128x128",
-        "RANDOM",
+        ("Custom_DQN_1qh_128_dep_bp0.5", "Custom DQN (1 head)"),
+        ("Custom_DQN_5qh_128_dep_bp0.5", "Custom DQN (5 heads)"),
+        ("Custom_DQN_10qh_128_dep_bp0.5", "Custom DQN (10 heads)"),
+        ("RANDOM", "Random Agent"),
     ]
 
-    # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/128x128_bp0.5/_boxplots"
+    save_dir = f"{base_dir}/_boxplots/128x128/"
 
-    # save_dir = f"{base_dir}/64x64/_boxplots"
-
-    plot_training_results = (
-        plot_training  # toggle to either to plot eval or train results
-    )
-
-    results_to_plot = load_csv_for_boxplot(
+    train_results_to_plot = load_csv_for_boxplot(
         base_dir=base_dir,
         algos_to_plot=algos_to_plot,
-        load_training_csvs=plot_training_results,
+        load_training_csvs=True,
+    )
+
+    validation_results_to_plot = load_csv_for_boxplot(
+        base_dir=base_dir,
+        algos_to_plot=algos_to_plot,
+        load_training_csvs=False,
     )
 
     boxplot_results(
-        results_to_plot=results_to_plot,
+        results_to_plot=train_results_to_plot,
         save_dir=save_dir,
-        is_training_result=plot_training_results,
+        is_training_result=True,
         env_name=env_name,
-        save_file_postfix="",
+        save_file_postfix="128",
+    )
+
+    boxplot_results(
+        results_to_plot=validation_results_to_plot,
+        save_dir=save_dir,
+        is_training_result=False,
+        env_name=env_name,
+        save_file_postfix="128",
     )
 
 
 def main_plots():
     # env_name = "MountainCar-v0"
-    env_name = "FrozenLake-v1"
+    env_name = "Taxi-v3"
 
-    base_dir = f"results/{env_name}/1.0M"
+    base_dir = f"results/{env_name}/200.0K"
 
-    # algos_to_plot = [
-    #     "RANDOM",
-    #     "64x64/Custom_DQN_1qh_auto",
-    #     "64x64/Custom_DQN_1qh_1bs",
-    #     "64x64/Custom_DQN_1qh_05bs",
-    #     "64x64/Custom_DQN_5qh_1bs",
-    #     "64x64/Custom_DQN_5qh_05bs",
-    # ]
-
+    # The second item will appear on the legend.
     algos_to_plot = [
-        # "Custom_DQN_1qh_bp0.5",
-        "Custom_DQN_1qh_64x64_bp0.5",
-        # "Custom_DQN_5qh_bp0.5",
-        "Custom_DQN_5qh_64x64_bp0.5",
-        # "Custom_DQN_10qh_bp0.5",
-        "Custom_DQN_10qh_64x64_bp0.5",
-        # "SB3_DQN",
-        # "SB3_DQN_64x64",
-        "RANDOM",
+        ("Custom_DQN_1qh_64x64_bp0.5.old", "EBQL (1 head bp0.5)"),
+        # ("Custom_DQN_1qh_64x64_bp1.0.old", "EBQL (1 head bp1.0)"),
+        ("Custom_DQN_5qh_s_64x64_bp0.5", "Strict EBQL (5 heads bp0.5)"),
+        ("Custom_DQN_10qh_s_64x64_bp0.5", "Strict EBQL (10 heads bp0.5)"),
+        ("RANDOM", "Random Agent"),
     ]
 
-    # save_dir = f"{base_dir}/_plots"
-    save_dir = f"{base_dir}/_plots/64x64_bp0.5"
-
-    # save_dir = f"{base_dir}/64x64/_plots"
-    # save_dir = f"{base_dir}/64x64/_plots"
-
-    plot_training_results = True  # toggle to either to plot eval or train results
+    save_dir = f"{base_dir}/_plots/strict_bp0.5"
 
     load_head_results = False  # set True to see head plots
 
-    results_to_plot = load_csvs(
+    train_results_to_plot = load_csvs(
         base_dir,
         algos_to_plot=algos_to_plot,
-        load_training_csvs=plot_training_results,
+        load_training_csvs=True,
         load_head_results=load_head_results,
     )
 
-    # results_to_plot["Custom_DQN_1qh_bp1.0"] = (
-    #     read_csv(
-    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_mean.csv"
-    #     ),
-    #     read_csv(
-    #         "results/FrozenLake-v1/1.0M/bp_1.0/Custom_DQN_1qh/Validation_Results/sma_std.csv"
-    #     ),
-    # )
+    validation_results_to_plot = load_csvs(
+        base_dir,
+        algos_to_plot=algos_to_plot,
+        load_training_csvs=False,
+        load_head_results=load_head_results,
+    )
 
     # If you need to plot results from outside of base_dir, use results_to_plot["my_result"] =  read_csv(path_to_result)
     plot_results(
-        results_to_plot,
+        train_results_to_plot,
         save_dir=save_dir,
-        is_training_result=plot_training_results,
-        env_name=env_name,
+        is_training_result=True,
+        env_name=env_name,  # Appears on the plot title
+        color_in_std=True,
+        save_file_postfix="",
+    )
+
+    plot_results(
+        validation_results_to_plot,
+        save_dir=save_dir,
+        is_training_result=False,
+        env_name=env_name,  # Appears on the plot title
         color_in_std=True,
         save_file_postfix="",
     )
 
 
 def main():
-    plot_training = False
-    boxplot(plot_training)
+    # plot_training = False
+    # boxplot()
 
-    # main_plots()
+    main_plots()
     # plot_seeds()
 
 
