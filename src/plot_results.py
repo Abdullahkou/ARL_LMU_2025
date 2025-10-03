@@ -374,22 +374,7 @@ def load_csv_for_boxplot(
     return results_to_plot
 
 
-def boxplot():
-    # env_name = "MountainCar-v0"
-    env_name = "LunarLander-v3"
-
-    base_dir = f"results/{env_name}/1.0M"
-
-    # The second item will appear on the legend.
-    algos_to_plot = [
-        ("Custom_DQN_1qh_128_dep_bp0.5", "Custom DQN (1 head)"),
-        ("Custom_DQN_5qh_128_dep_bp0.5", "Custom DQN (5 heads)"),
-        ("Custom_DQN_10qh_128_dep_bp0.5", "Custom DQN (10 heads)"),
-        ("RANDOM", "Random Agent"),
-    ]
-
-    save_dir = f"{base_dir}/_boxplots/128x128/"
-
+def boxplot(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
     train_results_to_plot = load_csv_for_boxplot(
         base_dir=base_dir,
         algos_to_plot=algos_to_plot,
@@ -407,7 +392,7 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=True,
         env_name=env_name,
-        save_file_postfix="128",
+        save_file_postfix=save_file_postfix,
     )
 
     boxplot_results(
@@ -415,27 +400,11 @@ def boxplot():
         save_dir=save_dir,
         is_training_result=False,
         env_name=env_name,
-        save_file_postfix="128",
+        save_file_postfix=save_file_postfix,
     )
 
 
-def main_plots():
-    # env_name = "MountainCar-v0"
-    env_name = "MountainCar-v0"
-
-    base_dir = f"results/{env_name}/500.0K"
-
-    # The second item will appear on the legend.
-    algos_to_plot = [
-        # ("Custom_DQN_1qh_64x64_bp0.5", "EBQL (1 head bp0.5)"),
-        ("Custom_DQN_1qh_64x64_bp1.0", "EBQL (1 head bp1.0)"),
-        ("Custom_DQN_5qh_64x64_bp0.5", "EBQL (5 heads bp0.5)"),
-        ("Custom_DQN_10qh_64x64_bp0.5", "EBQL (10 heads bp0.5)"),
-        # ("RANDOM", "Random Agent"),
-    ]
-
-    save_dir = f"{base_dir}/_plots/opt"
-
+def main_plots(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
     load_head_results = False  # set True to see head plots
 
     train_results_to_plot = load_csvs(
@@ -468,15 +437,40 @@ def main_plots():
         is_training_result=False,
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
-        save_file_postfix="",
+        save_file_postfix=save_file_postfix,
     )
 
 
 def main():
-    # plot_training = False
-    # boxplot()
+    env_name = "LunarLander-v3"
+    base_dir = f"results/{env_name}/1.0M"
 
-    main_plots()
+    # The second item will appear on the legend.
+    algos_to_plot = [
+        # ("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
+        ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
+        # ("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
+        # ("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
+        ("Custom_DQN_5qh_32_dep_bp0.5", "EBQL Non Strict (5 head)"),
+        # ("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
+        ("RANDOM", "Random Agent"),
+    ]
+
+    boxplot(
+        algos_to_plot,
+        env_name=env_name,
+        base_dir=base_dir,
+        save_dir=f"{base_dir}/_boxplots/32x32",
+        save_file_postfix="",
+    )
+
+    main_plots(
+        algos_to_plot,
+        env_name=env_name,
+        base_dir=base_dir,
+        save_dir=f"{base_dir}/_plots/32x32",
+        save_file_postfix="",
+    )
     # plot_seeds()
 
 
