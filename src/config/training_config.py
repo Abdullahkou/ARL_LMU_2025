@@ -168,13 +168,14 @@ class HyperParams:
     clip_grad_norm: float | None = 10.0
     double_q: bool = True  # enable Double DQN
     dueling: bool = False  # enable Dueling DQN
-    n_q_heads: int = 3  # multiple Q heads for ensembles/uncertainty
+    n_q_heads: int = 1  # multiple Q heads for ensembles/uncertainty
     hidden_sizes: tuple[int, ...] = (64, 64)  # MLP
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
     independent_heads: bool = False  # shared encoder vs. completely independent
     ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
-    ebql_strict: bool = True
-    bootstrap_prob: str | float = "auto"
+    ebql_strict: bool = False
+    bootstrap_prob: str | float = 0.5  # "auto"
+    single_head_action_select: bool = False
 
 
 @dataclass
@@ -201,7 +202,7 @@ class TrainingConfig:
     record_training: bool = True
     train_log_phases: int = 40
 
-    record_heads: bool = True
+    record_heads: bool = False
 
 
 def save_training_config(config: TrainingConfig, dir: str):

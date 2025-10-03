@@ -16,11 +16,11 @@ RANDOM_AGENT = "Random Agent"
 
 
 def boxplot_results(
-        results_to_plot,
-        save_dir: str,
-        env_name="",
-        is_training_result=False,
-        save_file_postfix="",
+    results_to_plot,
+    save_dir: str,
+    env_name="",
+    is_training_result=False,
+    save_file_postfix="",
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -64,7 +64,7 @@ def boxplot_results(
             if col_name not in means:
                 continue
             if col_name == VALUE_ERROR and (
-                    "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
+                "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
             ):
                 continue
             data = means[col_name].values.astype(float)
@@ -73,7 +73,7 @@ def boxplot_results(
 
             # random agent represented by horizontal line due to no training progress
             if agent_name == RANDOM_AGENT:
-                random_handle = plt.axhline(
+                plt.axhline(
                     y=np.nanmean(data, axis=0),
                     linestyle="--",
                     label=agent_name,
@@ -93,16 +93,14 @@ def boxplot_results(
 
         # Farben anpassen
         for patch, color in zip(
-                boxplot["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]
+            boxplot["boxes"], plt.rcParams["axes.prop_cycle"].by_key()["color"]
         ):
             patch.set_facecolor(color)
 
         plt.xticks(
             range(1, len(agents_list) + 1), range(1, len(agents_list) + 1)
         )  # nur Indizes
-        plt.legend(
-            boxplot["boxes"], agents_list + ["Random"], loc="best"
-        )
+        plt.legend(boxplot["boxes"], agents_list + ["Random"], loc="best")
 
         plt.tight_layout()
         plt.savefig(f"{save_dir}/{file_name}")
@@ -110,13 +108,13 @@ def boxplot_results(
 
 
 def plot_results(
-        results_to_plot,
-        save_dir: str,
-        env_name="",
-        is_training_result=False,
-        interval_x_axis: int | None = 5,
-        color_in_std=True,
-        save_file_postfix="",
+    results_to_plot,
+    save_dir: str,
+    env_name="",
+    is_training_result=False,
+    interval_x_axis: int | None = 5,
+    color_in_std=True,
+    save_file_postfix="",
 ):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -166,7 +164,7 @@ def plot_results(
             if "/" in agent_name:
                 agent_name = agent_name.split("/")[-1]
             if col_name == VALUE_ERROR and (
-                    "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
+                "SB3" in agent_name.upper() or RANDOM_AGENT in agent_name.upper()
             ):
                 continue
             mean = means[col_name].values.astype(float)
@@ -214,7 +212,7 @@ def read_csv(path_to_file):
 
 
 def load_csvs(
-        base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
+    base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
     results_to_plot = dict[str, tuple[str, str]]()
     if algos_to_plot is None:
@@ -356,7 +354,7 @@ def create_mean_per_seed(root_dir: str):
 
 
 def load_csv_for_boxplot(
-        base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
+    base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
     results_to_plot = {}
     if algos_to_plot is None:
@@ -444,31 +442,57 @@ def main_plots(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
 
 
 def main():
-    env_name = "LunarLander-v3"
-    base_dir = f"results/{env_name}/1.0M"
+    env_name = "MountainCar-v0"
+    base_dir = f"results/{env_name}/500.0K"
 
     # The second item will appear on the legend.
     algos_to_plot = [
-        # ("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
-        ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
-        # ("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
-        # ("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
-        ("Custom_DQN_5qh_32_dep_bp0.5", "EBQL Non Strict (5 head)"),
-        # ("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
-        ("RANDOM", "Random Agent")
+        # ("Custom_DQN_1qh_64x64_bp1.0", "EBQL (1 head)"),
+        # ("Custom_DQN_1qh_64x64_bp0.5", "EBQL (1 head)"),
+        # ("Custom_DQN_5qh_64x64_bp0.5", "EBQL (5 heads)"),
+        # ("Custom_DQN_5qh_64x64_sh_bp0.5", "Single Head Policy EBQL (5 heads)"),
+        # ("Custom_DQN_10qh_64x64_bp0.5", "EBQL (10 heads)"),
+        # ("Custom_DQN_10qh_64x64_sh_bp0.5", "Single Head Policy EBQL (10 heads)"),
+        #########################
+        # ("Custom_DQN_5qh_64x64_bp0.5", "EBQL Non Strict (5 heads)"),
+        # ("strict/Custom_DQN_5qh_s_64x64_bp0.5", "EBQL Strict (5 heads)"),
+        # # ("strict/Custom_DQN_5qh_64_dep_bp0.5_strict", "EBQL Strict (5 heads)"),
+        # ("Custom_DQN_10qh_64x64_bp0.5", "EBQL Non Strict (10 heads)"),
+        # ("strict/Custom_DQN_10qh_s_64x64_bp0.5", "EBQL Strict (10 heads)"),
+        # # ("strict/Custom_DQN_10qh_64_dep_bp0.5_strict", "EBQL Strict (10 heads)"),
+        #########################
+        ("Custom_DQN_5qh_64x64_bp0.5", "EBQL Policy (5 heads)"),
+        ("Custom_DQN_5qh_64x64_sh_bp0.5", "Single Head Policy (5 heads)"),
+        ("Custom_DQN_10qh_64x64_bp0.5", "EBQL Policy (10 heads)"),
+        ("Custom_DQN_10qh_64x64_sh_bp0.5", "Single Head Policy (10 heads)"),
+        #########################
+        # ("strict/Custom_DQN_5qh_64_dep_bp0.5_strict", "EBQL Strict (5 heads)"),
+        # ("strict/Custom_DQN_10qh_64_dep_bp0.5_strict", "EBQL Strict (10 heads)"),
+        ("RANDOM", "Random Agent"),
     ]
 
-    boxplot(algos_to_plot,
-            env_name=env_name,
-            base_dir=base_dir,
-            save_dir=f"{base_dir}/_boxplots/32x32",
-            save_file_postfix="")
+    # boxplot(
+    #     algos_to_plot,
+    #     env_name=env_name,
+    #     base_dir=base_dir,
+    #     save_dir=f"{base_dir}/_boxplots/64x64",
+    #     save_file_postfix="",
+    # )
 
-    main_plots(algos_to_plot,
-               env_name=env_name,
-               base_dir=base_dir,
-               save_dir=f"{base_dir}/_plots/32x32",
-               save_file_postfix="")
+    # main_plot_dir = f"{base_dir}/_plots/strict"
+
+    # main_plot_dir = f"{base_dir}/_plots/strict-vs-non"
+    main_plot_dir = f"{base_dir}/_plots/ebql_policy"
+
+    # main_plot_dir = f"{base_dir}/_plots/64x64"
+
+    main_plots(
+        algos_to_plot,
+        env_name=env_name,
+        base_dir=base_dir,
+        save_dir=main_plot_dir,
+        save_file_postfix="",
+    )
     # plot_seeds()
 
 
