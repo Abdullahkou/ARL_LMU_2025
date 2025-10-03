@@ -198,6 +198,7 @@ class DQNAgent(IAgent):
         """
         obs, _ = self.env.reset(seed=self.seed)
         self.active_head = self.rng.integers(0, self.hp.n_q_heads)
+
         ep_return = 0.0
         ep_len = 0
         pbar = tqdm(total=total_steps, desc="Training", unit="step")
@@ -213,7 +214,12 @@ class DQNAgent(IAgent):
             while self.global_step < total_steps:
                 pbar.update(1)
 
-                action = self._select_action(obs, deterministic=False)
+                action = None
+                if self.hp.single_head_action_select:
+                    action = self._select_action_active_head(obs, deterministic=False)
+                else:
+                    action = self._select_action(obs, deterministic=False)
+
                 next_obs, reward, terminated, truncated, info = self.env.step(action)
                 done = terminated or truncated
 
@@ -322,7 +328,7 @@ class DQNAgent(IAgent):
 
         q_used: torch.Tensor
         if q.ndim == 3:
-            if getattr(self.hp, "use_ebql", False):
+            if self.hp.use_ebql:
                 # EBQL: Mittelung über alle Heads
                 q_used = q.mean(dim=1)  # [B, n_actions]
             else:
@@ -447,6 +453,35 @@ class DQNAgent(IAgent):
         action, _ = self.predict(obs, deterministic=deterministic)
         return int(action)
 
+    def _select_action_active_head(
+        self, obs: np.ndarray, deterministic: bool = False
+    ) -> int:
+        if obs.ndim == len(self.obs_shape):
+            obs_batch = np.expand_dims(obs, axis=0)
+        else:
+            obs_batch = obs
+
+        obs_t = torch.as_tensor(obs_batch, dtype=torch.float32, device=self.device)
+        q = self.q_net(
+            obs_t
+        )  # [B, n_heads, n_actions] oder [B, n_actions] janahch ob multi-head oder nicht
+
+        q_used: torch.Tensor
+        if q.ndim == 3:
+            # Bootstrapped DQN: nur aktiver Head
+            q_used = q[:, self.active_head]
+        else:
+            q_used = q
+
+        if self.rng.random() < self.epsilon:
+            act = self.rng.integers(0, self.n_actions, size=(obs_batch.shape[0],))
+        else:
+            act = torch.argmax(q_used, dim=-1).cpu().numpy()
+
+        action = act if obs.ndim > len(self.obs_shape) else act[0]
+
+        return int(action)
+
     # _sgd_step MIT EBQL
     # def _sgd_step(self) -> Dict[str, float]:
     #     batch = self._sample_batch()
@@ -529,6 +564,141 @@ class DQNAgent(IAgent):
     #     }
 
     def _sgd_step(self) -> Dict[str, float]:
+        """optimized non-strict EBQL implementation"""
+        batch = self._sample_batch()
+        obs, actions, rewards, next_obs, dones, masks = (
+            batch["obs"],
+            batch["actions"],
+            batch["rewards"],
+            batch["next_obs"],
+            batch["dones"],
+            batch["masks"],
+        )
+
+        if masks.sum() <= 0:
+            return {
+                "train/loss": 0.0,
+                "train/head_losses": 0.0,
+                "train/epsilon": float(self.epsilon),
+            }
+
+        loss_total: torch.Tensor = None
+        head_losses = []
+
+        # --- Unterschied: Paper-EBQL vs. Approximation ---
+        # Paper (ebql_strict=True): nur EIN zufälliger Head wird geupdated (Algorithmus 1 in EBQL).
+        #   Vorteil: bessere Exploration durch Diversität der Heads.
+        #   Nachteil: höherer Varianz im Update, weniger stabile Performance.
+        #
+        # Approximation (ebql_strict=False): ALLE Heads werden geupdated und Targets nutzen
+        # ihre jeweils eigene beste Aktion -> gemittelter Wert.
+        #   Vorteil: stabiler, effizienter in der Praxis, oft bessere Performance.
+        #   Nachteil: weniger theoretisch korrekt, weniger Diversität zwischen Heads.
+        #
+
+        ebql_strict = self.hp.ebql_strict
+
+        if ebql_strict:
+            # ---- Strict EBQL: nur ein zufälliger Head trainieren ----
+            h = self.rng.integers(0, self.hp.n_q_heads)
+            mask = torch.as_tensor(masks[:, h], dtype=torch.float32, device=self.device)
+
+            q = self.q_net(obs)[:, h]  # [B, n_actions]
+            q_sa = q.gather(1, actions.view(-1, 1)).squeeze(1)
+
+            with torch.no_grad():
+                # Actionwahl mit Head h
+                q_next_online = self.q_net(next_obs)[:, h]
+                next_actions = torch.argmax(q_next_online, dim=1)
+
+                # Committee bewertet diese Aktion
+                q_next_targets = self.target_q_net(next_obs)  # [B, n_heads, n_actions]
+                q_committee = []
+                for u in range(self.hp.n_q_heads):
+                    if u == h:
+                        continue  # Paper: Committee ohne den aktiven Head
+                    q_committee.append(
+                        q_next_targets[:, u]
+                        .gather(1, next_actions.view(-1, 1))
+                        .squeeze(1)
+                    )
+                # q_next = torch.stack(q_committee, dim=1).mean(dim=1)
+                q_next = torch.stack(q_committee, dim=1).sum(dim=1) / (
+                    self.hp.n_q_heads - 1
+                )
+
+                target = rewards + (1.0 - dones) * self.hp.gamma * q_next
+
+            # Loss nur für den aktiven Head
+            loss = ((q_sa - target) ** 2 * mask).sum() / (mask.sum() + 1e-8)
+            loss_total = loss
+            head_losses.append(loss.item())
+
+        else:
+            # ---- Approximation: Update für alle Heads (aktueller Code) ----
+            q: torch.Tensor = self.q_net(obs)  # [B, n_heads, n_actions]
+
+            # Gather Q-values for the selected actions, across all heads
+            # q_sa: [B, n_heads]
+            q_sa = q.gather(2, actions.view(-1, 1, 1).expand(-1, q.size(1), 1)).squeeze(
+                -1
+            )
+
+            with torch.no_grad():
+                if self.hp.use_ebql:
+                    # EBQL: Ensemble-Target = mean over heads
+                    q_next_targets = self.target_q_net(
+                        next_obs
+                    )  # [B, n_heads, n_actions]
+                    q_next = q_next_targets.max(dim=2).values.mean(dim=1)  # [B]
+                    target: torch.Tensor = (
+                        rewards + (1.0 - dones) * self.hp.gamma * q_next
+                    )
+                    target = target.unsqueeze(1).expand(-1, q.size(1))  # [B, n_heads]
+                else:
+                    # Per-head target
+                    q_next_targets: torch.Tensor = self.target_q_net(
+                        next_obs
+                    )  # [B, n_heads, n_actions]
+                    q_next = q_next_targets.max(dim=2).values  # [B, n_heads]
+                    target = (
+                        rewards.unsqueeze(1)
+                        + (1.0 - dones.unsqueeze(1)) * self.hp.gamma * q_next
+                    )
+                    # target: [B, n_heads]
+
+            # Mask: [B, n_heads]
+            mask = masks.to(q_sa.dtype).to(self.device)
+
+            # Squared error per (batch, head)
+            losses = mask * (q_sa - target) ** 2  # [B, n_heads]
+
+            # Normalize per head
+            loss_per_head = losses.sum(dim=0) / (mask.sum(dim=0) + 1e-8)  # [n_heads]
+
+            # Sum over heads for total loss
+            loss_total = loss_per_head.mean()
+
+            # array for logging
+            head_losses = loss_per_head.detach().cpu().numpy()
+
+        # Backprop
+        self.optimizer.zero_grad(set_to_none=True)
+        loss_total.backward()
+        if self.hp.clip_grad_norm is not None:
+            nn.utils.clip_grad_norm_(self.q_net.parameters(), self.hp.clip_grad_norm)
+        self.optimizer.step()
+
+        return {
+            "train/loss": float(loss_total.item()),
+            "train/head_losses": float(np.mean(head_losses))
+            if len(head_losses) > 0
+            else 0.0,
+            "train/epsilon": float(self.epsilon),
+        }
+
+    def _sgd_step_less_efficient(self) -> Dict[str, float]:
+        """old version using the loop for the non-strict EBQL implementation"""
         batch = self._sample_batch()
         obs, actions, rewards, next_obs, dones, masks = (
             batch["obs"],

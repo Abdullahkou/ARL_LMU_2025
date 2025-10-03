@@ -2,7 +2,7 @@ algo_config:
     algorithm: Custom_DQN
     hyper_params:
         batch_size: 256
-        bootstrap_prob: 1.0
+        bootstrap_prob: 0.5
         buffer_size: 30000
         clip_grad_norm: 10.0
         double_q: true
@@ -21,6 +21,7 @@ algo_config:
         max_epsilon: 0.5
         min_epsilon: 0.05
         n_q_heads: 1
+        single_head_action_select: false
         target_update_interval: 1000
         tau: 1.0
         train_freq: 1

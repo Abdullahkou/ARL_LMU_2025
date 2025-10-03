@@ -443,32 +443,47 @@ def main_plots(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
 
 def main():
     env_name = "LunarLander-v3"
-    base_dir = f"results/{env_name}/1.0M"
+    base_dir = f"results/{env_name}/500.0K"
 
     # The second item will appear on the legend.
     algos_to_plot = [
         # ("Custom_DQN_LunarLander_05bp_32_ebql_3qh", "EBQL Strict (3 head)"),
-        ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
+        # ("Custom_DQN_LunarLander_05bp_32_ebql_5qh", "EBQL Strict (5 heads)"),
         # ("Custom_DQN_LunarLander_05bp_32_ebql_10qh", "EBQL Strict (10 heads)"),
-        # ("Custom_DQN_1qh_32_dep_bp0.5", "EBQL Non Strict (1 head)"),
-        ("Custom_DQN_5qh_32_dep_bp0.5", "EBQL Non Strict (5 head)"),
-        # ("Custom_DQN_10qh_32_dep_bp0.5", "EBQL Non Strict (10 head)"),
+        #########################
+        # ("Custom_DQN_1qh_32x32_bp1.0", "EBQL (1 head bp1.0)"),
+        # ("Custom_DQN_1qh_32x32_bp0.5", "EBQL (1 head bp0.5)"),
+        # ("Custom_DQN_5qh_32x32_bp0.5", "EBQL (5 heads bp0.5)"),
+        # ("Custom_DQN_5qh_32x32_sh_bp0.5", "EBQL (5 heads bp0.5)"),
+        # ("Custom_DQN_10qh_32x32_bp0.5", "EBQL (10 heads bp0.5)"),
+        # ("Custom_DQN_10qh_32x32_sh_bp0.5", "EBQL (10 heads bp0.5)"),
+        #########################
+        ("Custom_DQN_10qh_64x64_bp0.5", "EBQL Non Strict (10 heads)"),
+        # ("Custom_DQN_10qh_32x32_bp0.5", "EBQL Policy (10 heads)"),
+        # ("Custom_DQN_10qh_32x32_sh_bp0.5", "Single Head Policy (10 heads)"),
+        # ("strict/Custom_DQN_10qh_s_32x32_bp0.5", "EBQL Strict (10 heads)"),
+        ("Custom_DQN_10qh_64_dep_bp0.5_strict", "EBQL Strict (10 heads)"),
         ("RANDOM", "Random Agent"),
     ]
 
-    boxplot(
-        algos_to_plot,
-        env_name=env_name,
-        base_dir=base_dir,
-        save_dir=f"{base_dir}/_boxplots/32x32",
-        save_file_postfix="",
-    )
+    # boxplot(
+    #     algos_to_plot,
+    #     env_name=env_name,
+    #     base_dir=base_dir,
+    #     save_dir=f"{base_dir}/_boxplots/32x32",
+    #     save_file_postfix="",
+    # )
+
+    # main_plot_dir = f"{base_dir}/_plots/sh"
+    main_plot_dir = f"{base_dir}/_plots/strict-vs-non_10qh"
+    # main_plot_dir = f"{base_dir}/_plots/ebql_policy_10qh"
+    # main_plot_dir = f"{base_dir}/_plots/32x32"
 
     main_plots(
         algos_to_plot,
         env_name=env_name,
         base_dir=base_dir,
-        save_dir=f"{base_dir}/_plots/32x32",
+        save_dir=main_plot_dir,
         save_file_postfix="",
     )
     # plot_seeds()
