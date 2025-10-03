@@ -90,7 +90,7 @@ def recalc_seed_means(model_dir: str, seeds_to_collect: list[int]):
 
 
 def main():
-    model_dir = "results/FrozenLake-v1/1.0M/256x256/Custom_DQN_10qh_bpauto_a"
+    model_dir = "results/CliffWalking-v1/500.0K/Custom_DQN_10qh_32x32_sh_bp0.5"
 
     seeds_to_collect = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     recalc_seed_means(model_dir, seeds_to_collect=seeds_to_collect)
