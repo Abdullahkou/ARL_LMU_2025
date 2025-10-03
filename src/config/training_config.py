@@ -168,12 +168,12 @@ class HyperParams:
     clip_grad_norm: float | None = 10.0
     double_q: bool = True  # enable Double DQN
     dueling: bool = False  # enable Dueling DQN
-    n_q_heads: int = 1  # multiple Q heads for ensembles/uncertainty
-    hidden_sizes: tuple[int, ...] = (256, 256)  # MLP
+    n_q_heads: int = 3  # multiple Q heads for ensembles/uncertainty
+    hidden_sizes: tuple[int, ...] = (64, 64)  # MLP
     use_ebql: bool = True  # Ensemble Bootstrapped Q-Learning
     independent_heads: bool = False  # shared encoder vs. completely independent
     ensemble_aggregation: EnsembleAggregation = EnsembleAggregation.AVG
-    ebql_strict: bool = False
+    ebql_strict: bool = True
     bootstrap_prob: str | float = "auto"
 
 
