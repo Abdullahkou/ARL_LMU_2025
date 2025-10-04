@@ -454,17 +454,17 @@ def main():
         # ("Custom_DQN_10qh_64x64_bp0.5", "EBQL (10 heads)"),
         # ("Custom_DQN_10qh_64x64_sh_bp0.5", "Single Head Policy EBQL (10 heads)"),
         #########################
-        # ("Custom_DQN_5qh_64x64_bp0.5", "EBQL Non Strict (5 heads)"),
+        ("Custom_DQN_5qh_64x64_bp0.5", "EBQL Non Strict (5 heads)"),
         # ("strict/Custom_DQN_5qh_s_64x64_bp0.5", "EBQL Strict (5 heads)"),
-        # # ("strict/Custom_DQN_5qh_64_dep_bp0.5_strict", "EBQL Strict (5 heads)"),
+        ("strict/Custom_DQN_5qh_64x64_bp0.5_strict", "EBQL Strict (5 heads)"),
         # ("Custom_DQN_10qh_64x64_bp0.5", "EBQL Non Strict (10 heads)"),
         # ("strict/Custom_DQN_10qh_s_64x64_bp0.5", "EBQL Strict (10 heads)"),
-        # # ("strict/Custom_DQN_10qh_64_dep_bp0.5_strict", "EBQL Strict (10 heads)"),
+        # ("strict/Custom_DQN_10qh_64x64_bp0.5_strict", "EBQL Strict (10 heads)"),
         #########################
-        ("Custom_DQN_5qh_64x64_bp0.5", "EBQL Policy (5 heads)"),
-        ("Custom_DQN_5qh_64x64_sh_bp0.5", "Single Head Policy (5 heads)"),
-        ("Custom_DQN_10qh_64x64_bp0.5", "EBQL Policy (10 heads)"),
-        ("Custom_DQN_10qh_64x64_sh_bp0.5", "Single Head Policy (10 heads)"),
+        # ("Custom_DQN_5qh_64x64_bp0.5", "EBQL Policy (5 heads)"),
+        # ("Custom_DQN_5qh_64x64_sh_bp0.5", "Single Head Policy (5 heads)"),
+        # ("Custom_DQN_10qh_64x64_bp0.5", "EBQL Policy (10 heads)"),
+        # ("Custom_DQN_10qh_64x64_sh_bp0.5", "Single Head Policy (10 heads)"),
         #########################
         # ("strict/Custom_DQN_5qh_64_dep_bp0.5_strict", "EBQL Strict (5 heads)"),
         # ("strict/Custom_DQN_10qh_64_dep_bp0.5_strict", "EBQL Strict (10 heads)"),
@@ -481,8 +481,8 @@ def main():
 
     # main_plot_dir = f"{base_dir}/_plots/strict"
 
-    # main_plot_dir = f"{base_dir}/_plots/strict-vs-non"
-    main_plot_dir = f"{base_dir}/_plots/ebql_policy"
+    main_plot_dir = f"{base_dir}/_plots/strict-vs-non_5qh"
+    # main_plot_dir = f"{base_dir}/_plots/ebql_policy"
 
     # main_plot_dir = f"{base_dir}/_plots/64x64"
 
