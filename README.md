@@ -8,14 +8,16 @@ run ```uv sync``` to install the ``.venv``. In case theres a build problem with 
 
 ## Overview
 
-ARL_LMU_2025 is an ensemble training project designed for machine learning research and experimentation. It enables users to train, evaluate, and compare multiple ensemble configurations of ``EBQL`` (An adaptation to a Qlearning Learner), seeking to improving predictive performance.
+ARL_LMU_2025 is an ensemble training project designed for machine learning research and experimentation. It enables users to train, evaluate, and compare multiple ensemble configurations of ``EBQL`` (An adaptation to a DQN Learner), seeking to improving predictive performance.
 
 ## Features
 
-- Support for various ``ensemble configs`` -> [training_config.yaml](src/training_config.yaml)
-- Automated training, validation, and testing ``pipeline`` -> [train.py](src/train.py)
-- Configurable ``plotter`` -> [plot_results.py](src/plot_results.py)
+- Support for various ``ensemble/training configs`` -> [training_config.yaml](src/training_config.yaml)
+- Automated training and validation ``pipeline`` -> [train.py](src/train.py)
+- Configurable ``plotter``: support for boxplots that summarize the entire learning curve across seeds, and support for plotting individual seed curves -> [plot_results.py](src/plot_results.py)
 - ``slurm`` ready-to-run script -> [train.sh](slurm/train.sh)
+- utility to aggregate different seed results retroactively -> [recalc_seed_means.py](src/recalc_seed_means.py)
+- visualization of the agents acting in the environment -> [visualization.py](src/visualization.py)
 
 ## Usage
 

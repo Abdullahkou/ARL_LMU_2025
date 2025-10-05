@@ -205,13 +205,13 @@ def plot_results(
         plt.clf()
 
 
-def read_csv(path_to_file):
+def __read_csv(path_to_file):
     return pd.read_csv(path_to_file, index_col=0, dtype=str).apply(
         pd.to_numeric, errors="coerce"
     )
 
 
-def load_csvs(
+def __load_csvs(
     base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
     results_to_plot = dict[str, tuple[str, str]]()
@@ -224,8 +224,8 @@ def load_csvs(
         path_to_mean = f"{results_dir}/{SMA_MEAN_FILE}"
         path_to_std = f"{results_dir}/{SMA_STD_FILE}"
 
-        mean_df = read_csv(path_to_mean)
-        std_df = read_csv(path_to_std)
+        mean_df = __read_csv(path_to_mean)
+        std_df = __read_csv(path_to_std)
         results_to_plot[legend_label] = (mean_df, std_df)
 
         algo_heads_dir = f"{base_dir}/{algo_dir}/{HEADS_DIR}"
@@ -233,19 +233,19 @@ def load_csvs(
             for head in os.listdir(algo_heads_dir):
                 path_to_head_mean = f"{algo_heads_dir}/{head}/{SMA_MEAN_FILE}"
                 path_to_head_std = f"{algo_heads_dir}/{head}/{SMA_STD_FILE}"
-                head_mean_df = read_csv(path_to_head_mean)
-                head_std_df = read_csv(path_to_head_std)
+                head_mean_df = __read_csv(path_to_head_mean)
+                head_std_df = __read_csv(path_to_head_std)
                 results_to_plot[f"{algo_dir}_{head}"] = (head_mean_df, head_std_df)
     return results_to_plot
 
 
-def load_seeds(base_dir, algo_name, load_train_results=False, apply_rolling=True):
+def __load_seeds(base_dir, algo_name, load_train_results=False, apply_rolling=True):
     seeds_dir = f"{base_dir}/{algo_name}/seeds"
     results_to_plot = dict[str, tuple[pd.DataFrame, pd.DataFrame]]()
 
     for seed in os.listdir(seeds_dir):
         path_to_seed_csv = f"{seeds_dir}/{seed}/{'training_results.csv' if load_train_results else 'validation_results.csv'}"
-        mean_df = read_csv(path_to_seed_csv)
+        mean_df = __read_csv(path_to_seed_csv)
 
         if apply_rolling:
             mean_df = mean_df.rolling(window=3, min_periods=1).mean()
@@ -260,34 +260,7 @@ def load_seeds(base_dir, algo_name, load_train_results=False, apply_rolling=True
     return results_to_plot
 
 
-def plot_seeds():
-    env_name = "LunarLander-v3"
-    # env_name = "FrozenLake-v1"
-
-    base_dir = f"results/{env_name}/1.0M"
-
-    algo_name = "Custom_DQN_strict_ebql_20qh"
-
-    seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
-
-    plot_training_results = False  # toggle to either to plot eval or train results
-
-    results_to_plot = load_seeds(
-        base_dir,
-        algo_name,
-        load_train_results=plot_training_results,
-        apply_rolling=True,
-    )
-
-    plot_results(
-        results_to_plot=results_to_plot,
-        save_dir=seeds_save_dir,
-        is_training_result=plot_training_results,
-        env_name=env_name,
-    )
-
-
-def create_mean_per_seed(root_dir: str):
+def __create_mean_per_seed(root_dir: str):
     seeds_dir = Path(root_dir) / "seeds"
     out_training = Path(root_dir) / TRAINING
     out_validation = Path(root_dir) / VALIDATION
@@ -353,7 +326,7 @@ def create_mean_per_seed(root_dir: str):
     val_df.to_csv(out_validation / MEAN_PER_SEED, index=False)
 
 
-def load_csv_for_boxplot(
+def __load_csv_for_boxplot(
     base_dir, algos_to_plot, load_training_csvs=False, load_head_results=False
 ):
     results_to_plot = {}
@@ -366,22 +339,22 @@ def load_csv_for_boxplot(
         path_to_mean_per_seed = f"{results_dir}/{MEAN_PER_SEED}"
 
         if not os.path.exists(path_to_mean_per_seed):
-            create_mean_per_seed(root_dir=f"{base_dir}/{algo_dir}")
+            __create_mean_per_seed(root_dir=f"{base_dir}/{algo_dir}")
 
-        mean_df = read_csv(path_to_mean_per_seed)
+        mean_df = __read_csv(path_to_mean_per_seed)
         results_to_plot[legend_label] = mean_df
 
     return results_to_plot
 
 
 def boxplot(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
-    train_results_to_plot = load_csv_for_boxplot(
+    train_results_to_plot = __load_csv_for_boxplot(
         base_dir=base_dir,
         algos_to_plot=algos_to_plot,
         load_training_csvs=True,
     )
 
-    validation_results_to_plot = load_csv_for_boxplot(
+    validation_results_to_plot = __load_csv_for_boxplot(
         base_dir=base_dir,
         algos_to_plot=algos_to_plot,
         load_training_csvs=False,
@@ -407,14 +380,14 @@ def boxplot(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
 def main_plots(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
     load_head_results = False  # set True to see head plots
 
-    train_results_to_plot = load_csvs(
+    train_results_to_plot = __load_csvs(
         base_dir,
         algos_to_plot=algos_to_plot,
         load_training_csvs=True,
         load_head_results=load_head_results,
     )
 
-    validation_results_to_plot = load_csvs(
+    validation_results_to_plot = __load_csvs(
         base_dir,
         algos_to_plot=algos_to_plot,
         load_training_csvs=False,
@@ -438,6 +411,45 @@ def main_plots(algos_to_plot, env_name, base_dir, save_dir, save_file_postfix):
         env_name=env_name,  # Appears on the plot title
         color_in_std=True,
         save_file_postfix=save_file_postfix,
+    )
+
+
+def plot_seeds():
+    env_name = "LunarLander-v3"
+    # env_name = "FrozenLake-v1"
+
+    base_dir = f"results/{env_name}/1.0M"
+
+    algo_name = "Custom_DQN_strict_ebql_20qh"
+
+    seeds_save_dir = f"{base_dir}/{algo_name}/_plots"
+
+    # Training
+    results_to_plot = __load_seeds(
+        base_dir,
+        algo_name,
+        load_train_results=True,
+        apply_rolling=True,
+    )
+    plot_results(
+        results_to_plot=results_to_plot,
+        save_dir=seeds_save_dir,
+        is_training_result=True,
+        env_name=env_name,
+    )
+
+    # Validation
+    results_to_plot = __load_seeds(
+        base_dir,
+        algo_name,
+        load_train_results=False,
+        apply_rolling=True,
+    )
+    plot_results(
+        results_to_plot=results_to_plot,
+        save_dir=seeds_save_dir,
+        is_training_result=False,
+        env_name=env_name,
     )
 
 
